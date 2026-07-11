@@ -344,96 +344,36 @@ export async function uploadSessionPhoto(
 }
 
 /**
- * E4-S16 save path: queue locally, then try online ingest + photos + tags.
- * Full offline/background sync is E5; this is the best-effort immediate path.
- * Idempotent: re-entry after a successful photo submit only refreshes tags.
+ * E4-S16 + E5: queue locally, then drain via the sync engine (compression,
+ * resumable uploads, backoff). Idempotent when already on the server.
  */
 export async function saveAndSyncSession(
   session: LocalSession,
 ): Promise<{ synced: boolean; server?: ServerSession; error?: string }> {
   await enqueueSession(session);
-
+  // Dynamic import avoids a circular dep (sync → capture).
+  const { runSyncPass } = await import('./sync');
+  const result = await runSyncPass({ notify: true });
   try {
-    // Already fully on the server? Refresh and return.
-    try {
-      const existing = await apiFetch<ServerSession>(
-        `/sessions/${session.id}`,
-      );
-      if (existing.photos.length > 0) {
-        let server = existing;
-        for (const tag of session.localTags) {
-          if (tag.source === 'visitor') {
-            server = await applyServerTagAction(session.id, {
-              type: 'visitor',
-              photoId: tag.photoId,
-            });
-          } else if (tag.source === 'manual' && tag.workerId) {
-            server = await applyServerTagAction(session.id, {
-              type: 'manual',
-              workerId: tag.workerId,
-              photoId: tag.photoId,
-            });
-          }
-        }
-        await markSessionSynced(session.id);
-        return { synced: true, server };
-      }
-    } catch {
-      // Not found yet — fall through to full ingest.
+    const server = await apiFetch<ServerSession>(`/sessions/${session.id}`);
+    if (server.photos.length > 0) {
+      return { synced: true, server };
     }
-
-    const deviceSentAt = new Date().toISOString();
-    await apiFetch(`/sessions/${session.id}`, {
-      method: 'PUT',
-      body: {
-        type: session.type,
-        siteId: session.siteId,
-        deviceId: session.deviceId,
-        deviceCapturedAt: session.deviceCapturedAt,
-        deviceSentAt,
-        lat: session.gps.lat,
-        lng: session.gps.lng,
-        gpsStatus: session.gps.status,
-        mockLocation: session.gps.mockLocation,
-      },
-    });
-
-    const uploaded: { storageKey: string; sha256: string }[] = [];
-    for (const photo of session.photos) {
-      const { storageKey, offline } = await uploadSessionPhoto(photo.uri);
-      if (offline) {
-        throw new Error('Photo upload deferred — session queued for sync');
-      }
-      uploaded.push({ storageKey, sha256: photo.sha256 });
-    }
-
-    let server = await apiFetch<ServerSession & { photoIds?: string[] }>(
-      `/sessions/${session.id}/photos`,
-      { method: 'POST', body: { photos: uploaded } },
-    );
-
-    for (const tag of session.localTags) {
-      if (tag.source === 'visitor') {
-        server = await applyServerTagAction(session.id, {
-          type: 'visitor',
-          photoId: tag.photoId,
-        });
-      } else if (tag.source === 'manual' && tag.workerId) {
-        server = await applyServerTagAction(session.id, {
-          type: 'manual',
-          workerId: tag.workerId,
-          photoId: tag.photoId,
-        });
-      }
-    }
-
-    await markSessionSynced(session.id);
-    return { synced: true, server };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    await markSessionError(session.id, message);
-    return { synced: false, error: message };
+  } catch {
+    /* still offline */
   }
+  const queued = (await listQueuedSessions()).find((s) => s.id === session.id);
+  if (queued?.syncStatus === 'synced') {
+    return { synced: true };
+  }
+  return {
+    synced: false,
+    error:
+      queued?.lastError ??
+      (result.failed > 0
+        ? 'Sync deferred — will retry when online'
+        : '1 session pending sync'),
+  };
 }
 
 export async function fetchRoster(siteId?: string): Promise<WorkerDto[]> {

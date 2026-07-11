@@ -12,11 +12,13 @@ import {
   listQueuedSessions,
   type LocalSession,
 } from '../../lib/capture';
+import { useSync } from '../../lib/sync-context';
 
-/** Local session queue — capture history + sync state (E4-S16 / E5-S02 lite). */
+/** Local session queue — E4-S16 + E5-S01/S02 detail surface. */
 export default function AttendanceScreen() {
   const [sessions, setSessions] = useState<LocalSession[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const { syncNow, pill } = useSync();
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -57,6 +59,18 @@ export default function AttendanceScreen() {
         </Pressable>
       </View>
 
+      <Pressable
+        style={styles.syncBtn}
+        onPress={async () => {
+          await syncNow();
+          await refresh();
+        }}
+      >
+        <Text style={styles.syncBtnText}>
+          {pill.kind === 'uploading' ? 'Syncing…' : 'Sync now'}
+        </Text>
+      </Pressable>
+
       <FlatList
         data={sessions}
         keyExtractor={(s) => s.id}
@@ -85,7 +99,7 @@ export default function AttendanceScreen() {
                 item.syncStatus === 'pending' && styles.pending,
               ]}
             >
-              {item.syncStatus}
+              {statusLabel(item)}
               {item.lastError ? ` — ${item.lastError}` : ''}
             </Text>
           </View>
@@ -93,6 +107,21 @@ export default function AttendanceScreen() {
       />
     </View>
   );
+}
+
+function statusLabel(s: LocalSession): string {
+  switch (s.syncStatus) {
+    case 'pending':
+      return 'pending';
+    case 'synced':
+      return 'synced';
+    case 'error':
+      return 'needs attention';
+    case 'draft':
+      return 'draft';
+    default:
+      return s.syncStatus;
+  }
 }
 
 const styles = StyleSheet.create({
@@ -107,6 +136,14 @@ const styles = StyleSheet.create({
   },
   btnOut: { backgroundColor: '#1e3a5f' },
   btnText: { color: '#fff', fontWeight: '700' },
+  syncBtn: {
+    borderWidth: 1,
+    borderColor: '#14532d',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+  },
+  syncBtnText: { color: '#14532d', fontWeight: '600' },
   empty: { color: '#666', textAlign: 'center', marginTop: 40 },
   card: {
     borderWidth: 1,

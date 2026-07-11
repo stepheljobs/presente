@@ -39,6 +39,14 @@
         }
       ],
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#14532d"
+        }
+      ],
+      "expo-background-fetch",
+      [
         "expo-sqlite",
         {
           "useSQLCipher": true

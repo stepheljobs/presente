@@ -88,6 +88,34 @@ class SessionPhotoDto {
   @IsOptional()
   @IsString()
   sha256?: string;
+
+  /** E5-S04: digest re-computed after upload; mismatch → tamper_flag. */
+  @IsOptional()
+  @IsString()
+  sha256Verified?: string;
+}
+
+class AdminDayEditDto {
+  @IsUUID()
+  workerId!: string;
+
+  @IsUUID()
+  siteId!: string;
+
+  /** ISO date YYYY-MM-DD in tenant timezone. */
+  @IsString()
+  @MinLength(10)
+  day!: string;
+
+  @IsString()
+  @MinLength(3)
+  reason!: string;
+
+  @IsOptional()
+  before?: unknown;
+
+  @IsOptional()
+  after?: unknown;
 }
 
 class SubmitPhotosDto {
@@ -231,5 +259,18 @@ export class SessionsController {
       dto.action,
       dto.note,
     );
+  }
+}
+
+/** E5-S05 seed for admin-wins conflict rule (full day-edit UI is E6-S04). */
+@Controller('worker-days')
+export class WorkerDaysController {
+  constructor(private readonly captureService: CaptureService) {}
+
+  @Roles('owner', 'admin')
+  @Post('admin-edit')
+  @HttpCode(200)
+  adminEdit(@Body() dto: AdminDayEditDto, @CurrentUser() user: AuthUser) {
+    return this.captureService.recordAdminDayEdit(user, dto);
   }
 }
