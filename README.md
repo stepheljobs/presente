@@ -2,7 +2,7 @@
 
 Photo-first attendance and gross payroll for Philippine construction contractors. An engineer photographs the crew at time-in/time-out; face recognition tags workers; admins resolve exceptions and approve payroll from evidence, not memory.
 
-Product docs live in [docs/](docs/) — product brief, PRD, user flows, and the atomic story backlog that drives the commit history (one story = one commit, `feat(E0-S01): …`).
+Product docs live in [docs/](docs/) — product brief, PRD, user flows, and the atomic story backlog ([04-atomic-stories.md](docs/04-atomic-stories.md)) that work is delivered against, one story at a time (`E0-S01`, `E0-S02`, …).
 
 ## Monorepo layout
 
