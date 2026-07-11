@@ -73,6 +73,10 @@ export function logout(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+export function storeSession(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
 export interface SignupInput {
   companyName: string;
   email: string;

@@ -6,6 +6,7 @@ import {
   useLocation,
 } from 'react-router-dom';
 import { currentUser } from './lib/auth';
+import AcceptInvitePage from './pages/AcceptInvitePage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SettingsPage from './pages/SettingsPage';
@@ -30,6 +31,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/verify" element={<VerifyPage />} />
+      <Route path="/accept-invite" element={<AcceptInvitePage />} />
       <Route
         path="/"
         element={
