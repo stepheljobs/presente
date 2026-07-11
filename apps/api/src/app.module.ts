@@ -13,6 +13,7 @@ import { RecognitionModule } from './recognition/provider';
 import { SettingsModule } from './settings/settings.module';
 import { SitesModule } from './sites/sites.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { DayRecordsModule } from './day-records/day-records.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { WorkersModule } from './workers/workers.module';
@@ -34,6 +35,7 @@ import { WorkersModule } from './workers/workers.module';
     UploadsModule,
     DayRecordsModule,
     PayrollModule,
+    DashboardModule,
   ],
   controllers: [AppController, AppConfigController],
 })

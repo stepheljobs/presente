@@ -7,15 +7,18 @@ import {
 } from 'react-router-dom';
 import { currentUser } from './lib/auth';
 import AcceptInvitePage from './pages/AcceptInvitePage';
-import HomePage from './pages/HomePage';
+import AttendancePage from './pages/AttendancePage';
+import DashboardPage from './pages/DashboardPage';
+import ExceptionsPage from './pages/ExceptionsPage';
 import LoginPage from './pages/LoginPage';
+import PayrollPage from './pages/PayrollPage';
+import ReportsPage from './pages/ReportsPage';
+import SessionTagPage from './pages/SessionTagPage';
 import SettingsPage from './pages/SettingsPage';
 import SignupPage from './pages/SignupPage';
 import SitesPage from './pages/SitesPage';
 import VerifyPage from './pages/VerifyPage';
 import WorkersPage from './pages/WorkersPage';
-import AttendancePage from './pages/AttendancePage';
-import PayrollPage from './pages/PayrollPage';
 import './App.css';
 
 /** Redirects to /login when the token is absent, malformed, or expired. */
@@ -40,7 +43,31 @@ export default function App() {
         path="/"
         element={
           <RequireAuth>
-            <HomePage />
+            <DashboardPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/exceptions"
+        element={
+          <RequireAuth>
+            <ExceptionsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <RequireAuth>
+            <ReportsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/sessions/:id"
+        element={
+          <RequireAuth>
+            <SessionTagPage />
           </RequireAuth>
         }
       />
