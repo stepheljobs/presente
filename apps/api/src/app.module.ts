@@ -4,7 +4,10 @@ import { AppController } from './app.controller';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
+import { InvitesModule } from './invites/invites.module';
+import { MessagingModule } from './messaging/dispatcher';
 import { SessionsModule } from './sessions/sessions.module';
+import { SettingsModule } from './settings/settings.module';
 import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
@@ -12,8 +15,11 @@ import { UploadsModule } from './uploads/uploads.module';
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     AuditModule,
+    MessagingModule,
     AuthModule,
+    InvitesModule,
     SessionsModule,
+    SettingsModule,
     UploadsModule,
   ],
   controllers: [AppController],

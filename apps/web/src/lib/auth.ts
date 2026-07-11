@@ -72,3 +72,61 @@ export async function login(email: string, password: string): Promise<void> {
 export function logout(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
+
+export function storeSession(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export interface SignupInput {
+  companyName: string;
+  email: string;
+  phone?: string;
+  password: string;
+}
+
+async function postJson(path: string, body: unknown): Promise<Response> {
+  return fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function signup(input: SignupInput): Promise<void> {
+  const res = await postJson('/auth/signup', input);
+  if (res.status === 409) {
+    throw new Error(
+      'An account with this email already exists — try signing in instead.',
+    );
+  }
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
+    const message = Array.isArray(body?.message)
+      ? body.message[0]
+      : body?.message;
+    throw new Error(message ?? 'Sign-up failed — try again');
+  }
+}
+
+/** Verifies the emailed code; on success the session token is stored. */
+export async function verifyOtp(email: string, code: string): Promise<void> {
+  const res = await postJson('/auth/verify-otp', { email, code });
+  const body = (await res.json().catch(() => null)) as {
+    accessToken?: string;
+    message?: string;
+  } | null;
+  if (!res.ok || !body?.accessToken) {
+    throw new Error(body?.message ?? 'Verification failed — try again');
+  }
+  localStorage.setItem(TOKEN_KEY, body.accessToken);
+}
+
+export async function resendOtp(email: string): Promise<void> {
+  const res = await postJson('/auth/resend-otp', { email });
+  if (res.status === 429) {
+    throw new Error('Too many codes requested — try again in an hour');
+  }
+  if (!res.ok) throw new Error('Could not resend the code — try again');
+}

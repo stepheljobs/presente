@@ -1,5 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { Pool } from 'pg';
 
 // Point the app at the test database before AppModule reads config.
@@ -18,14 +18,16 @@ export function ownerPool(): Pool {
   return new Pool({ connectionString: OWNER_URL });
 }
 
-export async function createTestApp(): Promise<INestApplication> {
+export async function createTestApp(
+  configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder,
+): Promise<INestApplication> {
   // require() so the env assignments above run before AppModule's
   // ConfigModule initializes (a static import would hoist past them).
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { AppModule } = require('../src/app.module');
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
+  let builder = Test.createTestingModule({ imports: [AppModule] });
+  if (configure) builder = configure(builder);
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication();
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.init();
