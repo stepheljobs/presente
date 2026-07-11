@@ -1,6 +1,11 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow, types } from 'pg';
+
+// DATE columns come back as 'YYYY-MM-DD' strings, not local-midnight Date
+// objects — converting those through toISOString() shifts the day for any
+// timezone east of UTC (Asia/Manila is +08:00).
+types.setTypeParser(types.builtins.DATE, (value) => value);
 
 /**
  * All tenant-scoped data access goes through withTenant(): it opens a

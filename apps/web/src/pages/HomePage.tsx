@@ -13,6 +13,7 @@ export default function HomePage() {
           {user.email} · <strong>{user.role}</strong>
         </span>
         <Link to="/sites">Sites</Link>
+        <Link to="/workers">Workers</Link>
         <Link to="/settings">Settings</Link>
         <button
           onClick={() => {
