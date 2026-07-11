@@ -75,3 +75,26 @@
   text-align: center;
   color: #555;
 }
+
+.alt-action {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
+  text-align: center;
+}
+
+.notice {
+  margin: 0;
+  color: #14532d;
+  font-size: 0.9rem;
+}
+
+.linklike {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #14532d;
+  text-decoration: underline;
+  font-size: inherit;
+  cursor: pointer;
+}

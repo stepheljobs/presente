@@ -1,26 +1,31 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { login } from '../lib/auth';
+import { Link, useNavigate } from 'react-router-dom';
+import { signup } from '../lib/auth';
 
-export default function LoginPage() {
+export default function SignupPage() {
+  const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? '/';
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setBusy(true);
     try {
-      await login(email, password);
-      navigate(from, { replace: true });
+      await signup({
+        companyName,
+        email,
+        phone: phone.trim() || undefined,
+        password,
+      });
+      navigate('/verify', { state: { email } });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'Sign-up failed');
     } finally {
       setBusy(false);
     }
@@ -29,8 +34,17 @@ export default function LoginPage() {
   return (
     <main className="login-page">
       <form className="login-card" onSubmit={onSubmit}>
-        <h1>Presente</h1>
+        <h1>Create your company</h1>
         <p className="tagline">Attendance you can prove.</p>
+        <label>
+          Company name
+          <input
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            minLength={2}
+            required
+          />
+        </label>
         <label>
           Email
           <input
@@ -42,21 +56,31 @@ export default function LoginPage() {
           />
         </label>
         <label>
+          Phone (optional)
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+63 917 000 0000"
+          />
+        </label>
+        <label>
           Password
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
+            autoComplete="new-password"
+            minLength={8}
             required
           />
         </label>
         {error && <p role="alert" className="error">{error}</p>}
         <button type="submit" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? 'Creating…' : 'Create account'}
         </button>
         <p className="alt-action">
-          New company? <Link to="/signup">Create an account</Link>
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </form>
     </main>
