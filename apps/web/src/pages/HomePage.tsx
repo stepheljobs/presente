@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { currentUser, logout } from '../lib/auth';
 
 export default function HomePage() {
@@ -12,6 +12,7 @@ export default function HomePage() {
         <span className="whoami">
           {user.email} · <strong>{user.role}</strong>
         </span>
+        <Link to="/settings">Settings</Link>
         <button
           onClick={() => {
             logout();

@@ -8,6 +8,7 @@ import {
 import { currentUser } from './lib/auth';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import SettingsPage from './pages/SettingsPage';
 import SignupPage from './pages/SignupPage';
 import VerifyPage from './pages/VerifyPage';
 import './App.css';
@@ -34,6 +35,14 @@ export default function App() {
         element={
           <RequireAuth>
             <HomePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <RequireAuth>
+            <SettingsPage />
           </RequireAuth>
         }
       />
