@@ -99,7 +99,7 @@ export function evaluateShotQuality(
  * E5 sync queue will resolve. */
 export async function uploadArtifact(
   localUri: string,
-  category: 'consent' | 'enrollment-photo',
+  category: 'consent' | 'enrollment-photo' | 'session-photo',
   contentType: string,
 ): Promise<string> {
   try {

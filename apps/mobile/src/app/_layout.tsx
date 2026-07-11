@@ -17,6 +17,8 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={user !== null}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="enroll" />
+        <Stack.Screen name="capture" />
       </Stack.Protected>
       <Stack.Protected guard={user === null}>
         <Stack.Screen name="login" />
