@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { DayRecordsModule } from '../day-records/day-records.module';
 import { CaptureService } from './capture.service';
 import {
   ExceptionsController,
@@ -12,6 +13,7 @@ import {
 import { SessionsService } from './sessions.service';
 
 @Module({
+  imports: [forwardRef(() => DayRecordsModule)],
   controllers: [
     SessionsController,
     ExceptionsController,

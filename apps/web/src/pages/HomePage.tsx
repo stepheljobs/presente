@@ -14,6 +14,7 @@ export default function HomePage() {
         </span>
         <Link to="/sites">Sites</Link>
         <Link to="/workers">Workers</Link>
+        <Link to="/attendance">Attendance</Link>
         <Link to="/settings">Settings</Link>
         <button
           onClick={() => {

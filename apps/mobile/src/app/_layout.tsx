@@ -20,6 +20,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="enroll" />
         <Stack.Screen name="capture" />
+        <Stack.Screen name="corrections" />
       </Stack.Protected>
       <Stack.Protected guard={user === null}>
         <Stack.Screen name="login" />

@@ -68,6 +68,11 @@ class WorkerDto {
   @IsString()
   govId?: string;
 
+  /** E6-S08: register without biometrics (manual attendance). */
+  @IsOptional()
+  @IsBoolean()
+  noBiometricConsent?: boolean;
+
   @IsOptional()
   @IsISO8601()
   startDate?: string;
