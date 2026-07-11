@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SettingsPage from './pages/SettingsPage';
 import SignupPage from './pages/SignupPage';
+import SitesPage from './pages/SitesPage';
 import VerifyPage from './pages/VerifyPage';
 import './App.css';
 
@@ -45,6 +46,14 @@ export default function App() {
         element={
           <RequireAuth>
             <SettingsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/sites"
+        element={
+          <RequireAuth>
+            <SitesPage />
           </RequireAuth>
         }
       />
