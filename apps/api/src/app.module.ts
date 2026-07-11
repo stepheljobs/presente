@@ -3,13 +3,16 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { AppConfigController } from './config/app-config.controller';
 import { DatabaseModule } from './database/database.module';
 import { InvitesModule } from './invites/invites.module';
 import { MessagingModule } from './messaging/dispatcher';
 import { SessionsModule } from './sessions/sessions.module';
+import { RecognitionModule } from './recognition/provider';
 import { SettingsModule } from './settings/settings.module';
 import { SitesModule } from './sites/sites.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { WorkersModule } from './workers/workers.module';
 
 @Module({
   imports: [
@@ -22,8 +25,10 @@ import { UploadsModule } from './uploads/uploads.module';
     SessionsModule,
     SettingsModule,
     SitesModule,
+    RecognitionModule,
+    WorkersModule,
     UploadsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AppConfigController],
 })
 export class AppModule {}
