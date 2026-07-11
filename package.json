@@ -1,0 +1,13 @@
+{
+  "name": "presente",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter @presente/api start:dev",
+    "dev:web": "pnpm --filter @presente/web dev",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
