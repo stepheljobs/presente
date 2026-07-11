@@ -13,6 +13,16 @@ export interface RecognitionProvider {
     tenantId: string;
     faceId: string;
   }): Promise<{ deleted: boolean }>;
+
+  /**
+   * E4-S09: detect + match every face in a session photo against the
+   * candidate roster. workerId null = face detected but unmatched.
+   */
+  searchFaces(input: {
+    tenantId: string;
+    photoKey: string;
+    candidates: { workerId: string; faceId: string }[];
+  }): Promise<{ faces: { workerId: string | null; confidence: number }[] }>;
 }
 
 export const RECOGNITION_PROVIDER = Symbol('RECOGNITION_PROVIDER');
@@ -43,6 +53,18 @@ export class StubRecognitionProvider implements RecognitionProvider {
   }): Promise<{ deleted: boolean }> {
     this.logger.log(`STUB deleteFaces faceId=${input.faceId}`);
     return { deleted: true };
+  }
+
+  async searchFaces(input: {
+    tenantId: string;
+    photoKey: string;
+    candidates: { workerId: string; faceId: string }[];
+  }): Promise<{ faces: { workerId: string | null; confidence: number }[] }> {
+    this.logger.log(
+      `STUB searchFaces photo=${input.photoKey} candidates=${input.candidates.length}`,
+    );
+    // No detection capability in the stub — photos stay taggable manually.
+    return { faces: [] };
   }
 }
 

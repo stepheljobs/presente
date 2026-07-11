@@ -33,6 +33,12 @@
         }
       ],
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Presente uses your location to verify attendance photos are taken at the job site."
+        }
+      ],
+      [
         "expo-sqlite",
         {
           "useSQLCipher": true

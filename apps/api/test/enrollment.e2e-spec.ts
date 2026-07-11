@@ -28,6 +28,12 @@ class FlakyProvider implements RecognitionProvider {
     this.deleteCalls.push(input.faceId);
     return { deleted: true };
   }
+
+  async searchFaces(): Promise<{
+    faces: { workerId: string | null; confidence: number }[];
+  }> {
+    return { faces: [] };
+  }
 }
 
 describe('E3-S06/S09/S12 consent gate, templates, biometric deletion', () => {
