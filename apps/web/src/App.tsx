@@ -13,6 +13,7 @@ import SettingsPage from './pages/SettingsPage';
 import SignupPage from './pages/SignupPage';
 import SitesPage from './pages/SitesPage';
 import VerifyPage from './pages/VerifyPage';
+import WorkersPage from './pages/WorkersPage';
 import './App.css';
 
 /** Redirects to /login when the token is absent, malformed, or expired. */
@@ -54,6 +55,14 @@ export default function App() {
         element={
           <RequireAuth>
             <SitesPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/workers"
+        element={
+          <RequireAuth>
+            <WorkersPage />
           </RequireAuth>
         }
       />
