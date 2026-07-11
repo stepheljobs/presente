@@ -197,6 +197,61 @@
   font-size: 0.9rem;
 }
 
+.totals-card {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.totals-card div {
+  background: #f0fdf4;
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.totals-card strong {
+  font-size: 1.25rem;
+  color: #14532d;
+}
+
+.totals-card span {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.matrix-wrap {
+  overflow-x: auto;
+  max-height: 28rem;
+  overflow-y: auto;
+}
+
+.matrix .cell {
+  text-align: center;
+  font-family: ui-monospace, monospace;
+  min-width: 2.5rem;
+}
+
+.badge.status-draft {
+  background: #e5e7eb;
+  color: #374151;
+}
+.badge.status-reviewed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.badge.status-approved {
+  background: #dcfce7;
+  color: #14532d;
+}
+.badge.status-exported {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
 .page-pad {
   padding: 1.2rem;
   max-width: 34rem;

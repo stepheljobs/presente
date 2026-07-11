@@ -14,6 +14,7 @@ import { SettingsModule } from './settings/settings.module';
 import { SitesModule } from './sites/sites.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { DayRecordsModule } from './day-records/day-records.module';
+import { PayrollModule } from './payroll/payroll.module';
 import { WorkersModule } from './workers/workers.module';
 
 @Module({
@@ -32,6 +33,7 @@ import { WorkersModule } from './workers/workers.module';
     WorkersModule,
     UploadsModule,
     DayRecordsModule,
+    PayrollModule,
   ],
   controllers: [AppController, AppConfigController],
 })
