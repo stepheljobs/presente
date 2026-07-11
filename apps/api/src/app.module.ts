@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { MessagingModule } from './messaging/dispatcher';
 import { SessionsModule } from './sessions/sessions.module';
+import { SettingsModule } from './settings/settings.module';
 import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { UploadsModule } from './uploads/uploads.module';
     MessagingModule,
     AuthModule,
     SessionsModule,
+    SettingsModule,
     UploadsModule,
   ],
   controllers: [AppController],
