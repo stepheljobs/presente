@@ -8,6 +8,7 @@ import { InvitesModule } from './invites/invites.module';
 import { MessagingModule } from './messaging/dispatcher';
 import { SessionsModule } from './sessions/sessions.module';
 import { SettingsModule } from './settings/settings.module';
+import { SitesModule } from './sites/sites.module';
 import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { UploadsModule } from './uploads/uploads.module';
     InvitesModule,
     SessionsModule,
     SettingsModule,
+    SitesModule,
     UploadsModule,
   ],
   controllers: [AppController],
