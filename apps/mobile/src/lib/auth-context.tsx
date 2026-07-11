@@ -7,6 +7,7 @@ import {
 } from 'react';
 import * as auth from './auth';
 import type { SessionUser } from './auth';
+import { registerForPushNotifications } from './notifications';
 
 interface AuthState {
   user: SessionUser | null;
@@ -24,12 +25,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     auth
       .loadUser()
-      .then(setUser)
+      .then(async (u) => {
+        setUser(u);
+        if (u) void registerForPushNotifications();
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    setUser(await auth.login(email, password));
+    const u = await auth.login(email, password);
+    setUser(u);
+    void registerForPushNotifications();
   };
 
   const signOut = async () => {
