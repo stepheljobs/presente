@@ -12,7 +12,6 @@ import {
   TileLayer,
   useMapEvents,
 } from 'react-leaflet';
-import { Link } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
 import { currentUser } from '../lib/auth';
 
@@ -138,9 +137,6 @@ export default function SitesPage() {
 
   return (
     <main className="page-pad sites-page">
-      <nav className="crumbs">
-        <Link to="/">← Dashboard</Link>
-      </nav>
       <div className="sites-header">
         <h2>Sites</h2>
         {canEdit && !draft && (

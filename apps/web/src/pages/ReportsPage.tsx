@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { apiFetch } from '../lib/api';
 import { accessToken } from '../lib/auth';
-import { TopNav } from './DashboardPage';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
@@ -94,7 +93,6 @@ export default function ReportsPage() {
 
   return (
     <main className="page-pad">
-      <TopNav active="reports" />
       {error && <p className="error" style={{ padding: '0 1.2rem' }}>{error}</p>}
 
       <section className="toolbar">

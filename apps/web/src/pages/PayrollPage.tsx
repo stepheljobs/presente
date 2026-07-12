@@ -196,15 +196,6 @@ export default function PayrollPage() {
 
   return (
     <main className="page-pad">
-      <header className="topbar">
-        <Link to="/" className="brand">
-          Presente
-        </Link>
-        <Link to="/attendance">Attendance</Link>
-        <strong>Payroll</strong>
-        <Link to="/settings">Settings</Link>
-      </header>
-
       {error && <p className="error" style={{ padding: '0 1.2rem' }}>{error}</p>}
       {notice && <p className="notice" style={{ padding: '0 1.2rem' }}>{notice}</p>}
 

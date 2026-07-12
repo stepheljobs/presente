@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
 
 interface DayRecord {
@@ -136,16 +135,6 @@ export default function AttendancePage() {
 
   return (
     <main className="page-pad attendance-page">
-      <header className="topbar">
-        <Link to="/" className="brand">
-          Presente
-        </Link>
-        <Link to="/sites">Sites</Link>
-        <Link to="/workers">Workers</Link>
-        <strong>Attendance</strong>
-        <Link to="/settings">Settings</Link>
-      </header>
-
       <section className="toolbar">
         <label>
           Day{' '}

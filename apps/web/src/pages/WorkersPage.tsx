@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
 
 interface Worker {
@@ -67,9 +66,6 @@ export default function WorkersPage() {
 
   return (
     <main className="page-pad workers-page">
-      <nav className="crumbs">
-        <Link to="/">← Dashboard</Link>
-      </nav>
       <h2>Workers</h2>
       {error && <p role="alert" className="error">{error}</p>}
       {notice && <p className="notice" role="status">{notice}</p>}

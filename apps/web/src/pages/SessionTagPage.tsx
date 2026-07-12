@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
-import { TopNav } from './DashboardPage';
 
 interface Tag {
   id: string;
@@ -89,7 +88,6 @@ export default function SessionTagPage() {
   if (!session) {
     return (
       <main className="page-pad">
-        <TopNav active="today" />
         <p className="muted" style={{ padding: '1.2rem' }}>
           {error ?? 'Loading…'}
         </p>
@@ -103,7 +101,6 @@ export default function SessionTagPage() {
 
   return (
     <main className="page-pad">
-      <TopNav active="today" />
       {error && <p className="error" style={{ padding: '0 1.2rem' }}>{error}</p>}
       {notice && <p className="notice" style={{ padding: '0 1.2rem' }}>{notice}</p>}
 
