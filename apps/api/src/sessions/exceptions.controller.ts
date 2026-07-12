@@ -49,6 +49,9 @@ export class ExceptionsController {
     @CurrentUser() user: AuthUser,
     @Query('status') status = 'open',
     @Query('type') type?: string,
+    @Query('siteId') siteId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
     return this.db.withTenant(user.tenantId, async (client) => {
       const params: unknown[] = [status];
@@ -56,6 +59,18 @@ export class ExceptionsController {
       if (type) {
         params.push(type);
         filter += ` AND e.type = $${params.length}`;
+      }
+      if (siteId) {
+        params.push(siteId);
+        filter += ` AND e.site_id = $${params.length}`;
+      }
+      if (from) {
+        params.push(from);
+        filter += ` AND e.created_at::date >= $${params.length}::date`;
+      }
+      if (to) {
+        params.push(to);
+        filter += ` AND e.created_at::date <= $${params.length}::date`;
       }
       const rows = await client.query(
         `SELECT e.*, w.full_name AS worker_name, s.name AS site_name
@@ -66,7 +81,13 @@ export class ExceptionsController {
          ORDER BY e.severity, e.created_at DESC LIMIT 500`,
         params,
       );
-      return rows.rows.map((e) => ({
+      // Counts by type for queue badges (E8-S05).
+      const counts = await client.query(
+        `SELECT type, count(*)::int AS n FROM exceptions
+         WHERE status = $1 GROUP BY type`,
+        [status],
+      );
+      const items = rows.rows.map((e) => ({
         id: e.id,
         type: e.type,
         severity: e.severity,
@@ -75,11 +96,25 @@ export class ExceptionsController {
         sessionId: e.session_id,
         siteId: e.site_id,
         siteName: e.site_name,
-        day: e.day,
+        day:
+          e.day instanceof Date
+            ? e.day.toISOString().slice(0, 10)
+            : e.day
+              ? String(e.day).slice(0, 10)
+              : null,
         note: e.note,
         status: e.status,
-        createdAt: e.created_at.toISOString(),
+        createdAt:
+          e.created_at instanceof Date
+            ? e.created_at.toISOString()
+            : String(e.created_at),
       }));
+      // Attach counts without breaking array clients (E8-S05 badges).
+      return Object.assign(items, {
+        counts: Object.fromEntries(
+          counts.rows.map((c) => [c.type, Number(c.n)]),
+        ),
+      });
     });
   }
 
