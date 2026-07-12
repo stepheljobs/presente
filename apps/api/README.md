@@ -37,6 +37,20 @@ pnpm --filter @presente/api test:e2e      # e2e against presente_test
 
 E2e requires Postgres with `presente_test` migrated (`pnpm migrate:test` from this package).
 
+## Access logs
+
+Every request (except `GET /health`) is logged as `METHOD /path status durationMs` to:
+
+1. **Console** — Nest `HTTP` logger (shows under `[api]` when using `pnpm dev`)
+2. **File** — `storage/logs/access.log` (gitignored; ISO timestamp prefix)
+
+```sh
+# watch the file while the API is running
+tail -f apps/api/storage/logs/access.log
+```
+
+Disable with `HTTP_LOG=false`. Console-only with `HTTP_LOG_FILE=false`. Off automatically when `NODE_ENV=test`.
+
 ## Notes
 
 - App connects as `presente_app` so RLS applies; migrations run as the table owner.

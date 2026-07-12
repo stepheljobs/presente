@@ -104,10 +104,23 @@ pnpm --filter @presente/mobile typecheck
 
 ## Running the apps
 
+Postgres must already be running (and migrated/seeded — see first-time setup). Then from the repo root:
+
 ```sh
-pnpm dev:api    # NestJS on http://localhost:3000
-pnpm dev:web    # dashboard on http://localhost:5173
+pnpm dev          # API + web dashboard + Expo mobile (one terminal)
+pnpm dev:stack    # API + web only (no mobile)
+pnpm dev:api      # NestJS alone → http://localhost:3000
+pnpm dev:web      # dashboard alone → http://localhost:5173
+pnpm dev:mobile   # Expo alone (full keyboard UX: i / a / r)
 ```
+
+`pnpm dev` and `pnpm dev:stack` use [concurrently](https://github.com/open-cli-tools/concurrently) with colored `[api]` / `[web]` / `[mobile]` prefixes. Ctrl+C stops every process.
+
+**Notes**
+
+- Postgres and object storage are **not** started by these scripts.
+- Expo interactive keys (`i` / `a` / `r`) can be unreliable under `pnpm dev` because stdin is shared; use `pnpm dev:mobile` alone when you need them.
+- Mobile still needs a **dev client** / emulator for camera & SQLCipher (not Expo Go). `pnpm dev` only starts Metro via `expo start`.
 
 Log in with the seeded **`owner@demo.ph` / `presente-dev-123`**.
 
