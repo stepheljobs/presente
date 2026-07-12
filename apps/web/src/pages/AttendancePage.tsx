@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { Alert, AppShell, Badge, Card, TableWrap } from '../components/ui';
 import { apiFetch } from '../lib/api';
 
 interface DayRecord {
@@ -134,7 +135,7 @@ export default function AttendancePage() {
   }
 
   return (
-    <main className="page-pad attendance-page">
+    <AppShell active="attendance" title="Attendance" eyebrow="Day records">
       <section className="toolbar">
         <label>
           Day{' '}
@@ -149,12 +150,14 @@ export default function AttendancePage() {
         </button>
       </section>
 
-      {error && <p className="error">{error}</p>}
-      {notice && <p className="notice">{notice}</p>}
+      {error && <Alert tone="error">{error}</Alert>}
+      {notice && <Alert tone="success">{notice}</Alert>}
 
       {corrections.length > 0 && (
-        <section className="card-block">
-          <h2>Correction requests</h2>
+        <Card
+          title="Correction requests"
+          description="Submitted changes waiting for admin review."
+        >
           <ul className="worker-list">
             {corrections.map((c) => (
               <li key={c.id}>
@@ -178,127 +181,129 @@ export default function AttendancePage() {
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
       )}
 
-      <section className="card-block">
-        <h2>Day records · {day}</h2>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Worker</th>
-              <th>Site</th>
-              <th>In</th>
-              <th>Out</th>
-              <th>Hours</th>
-              <th>Status</th>
-              <th>Source</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr
-                key={r.id}
-                className="clickable"
-                onClick={() => void openDetail(r.id)}
-              >
-                <td>
-                  {r.workerName}
-                  {r.noBiometricConsent && (
-                    <span className="badge">no biometrics</span>
-                  )}
-                </td>
-                <td>{r.siteName ?? '—'}</td>
-                <td>{fmtTime(r.timeIn)}</td>
-                <td>{fmtTime(r.timeOut)}</td>
-                <td>{r.hours}</td>
-                <td>{r.status}</td>
-                <td>{r.source}</td>
-              </tr>
-            ))}
-            {rows.length === 0 && (
+      <Card title={`Day records · ${day}`} description="Click a row to inspect evidence, audit trail, and admin edits.">
+        <TableWrap>
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan={7} className="muted">
-                  No records — capture sessions then recompute.
-                </td>
+                <th>Worker</th>
+                <th>Site</th>
+                <th>In</th>
+                <th>Out</th>
+                <th>Hours</th>
+                <th>Status</th>
+                <th>Source</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr
+                  key={r.id}
+                  className="clickable"
+                  onClick={() => void openDetail(r.id)}
+                >
+                  <td>
+                    {r.workerName}
+                    {r.noBiometricConsent && <Badge>no biometrics</Badge>}
+                  </td>
+                  <td>{r.siteName ?? '—'}</td>
+                  <td>{fmtTime(r.timeIn)}</td>
+                  <td>{fmtTime(r.timeOut)}</td>
+                  <td>{r.hours}</td>
+                  <td>{r.status}</td>
+                  <td>{r.source}</td>
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    No records — capture sessions then recompute.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </TableWrap>
+      </Card>
 
       {detail && (
-        <section className="card-block drilldown">
-          <div className="toolbar">
-            <h2>
-              {detail.workerName} · {detail.day}
-            </h2>
-            <button type="button" onClick={() => setDetail(null)}>
+        <Card title={`${detail.workerName} · ${detail.day}`}>
+          <div className="section-heading">
+            <div>
+              <p>
+                {detail.siteName} · {detail.hours}h · {detail.status} · source{' '}
+                {detail.source}
+              </p>
+              <p className="muted">
+                Geofence:{' '}
+                {detail.withinFence === null
+                  ? 'n/a'
+                  : detail.withinFence
+                    ? 'pass'
+                    : 'fail'}
+                {detail.adminNote && ` · note: ${detail.adminNote}`}
+              </p>
+            </div>
+            <button type="button" className="secondary" onClick={() => setDetail(null)}>
               Close
             </button>
           </div>
-          <p>
-            {detail.siteName} · {detail.hours}h · {detail.status} · source{' '}
-            {detail.source}
-          </p>
-          <p className="muted">
-            Geofence:{' '}
-            {detail.withinFence === null
-              ? 'n/a'
-              : detail.withinFence
-                ? 'pass'
-                : 'fail'}
-            {detail.adminNote && ` · note: ${detail.adminNote}`}
-          </p>
-          <h3>Photos ({detail.photos.length})</h3>
-          <ul className="muted">
-            {detail.photos.map((p) => (
-              <li key={p.id}>
-                {p.storageKey} · {p.recognitionStatus}
-              </li>
-            ))}
-            {detail.photos.length === 0 && <li>No linked photos</li>}
-          </ul>
-          <h3>Audit trail</h3>
-          <ul className="muted">
-            {detail.audit.map((a, i) => (
-              <li key={i}>
-                {a.createdAt.slice(0, 19)} · {a.action}
-                {a.reason ? ` — ${a.reason}` : ''}
-              </li>
-            ))}
-            {detail.audit.length === 0 && <li>No audit entries yet</li>}
-          </ul>
+          <div className="tag-workspace">
+            <div>
+              <h3>Photos ({detail.photos.length})</h3>
+              <ul className="muted">
+                {detail.photos.map((p) => (
+                  <li key={p.id}>
+                    {p.storageKey} · {p.recognitionStatus}
+                  </li>
+                ))}
+                {detail.photos.length === 0 && <li>No linked photos</li>}
+              </ul>
+              <h3>Audit trail</h3>
+              <ul className="muted">
+                {detail.audit.map((a, i) => (
+                  <li key={i}>
+                    {a.createdAt.slice(0, 19)} · {a.action}
+                    {a.reason ? ` — ${a.reason}` : ''}
+                  </li>
+                ))}
+                {detail.audit.length === 0 && <li>No audit entries yet</li>}
+              </ul>
+            </div>
 
-          <form onSubmit={(e) => void saveEdit(e)} className="edit-form">
-            <h3>Admin edit</h3>
-            <label>
-              Status
-              <select
-                value={editStatus}
-                onChange={(e) => setEditStatus(e.target.value)}
-              >
-                <option value="present">Present</option>
-                <option value="halfday">Halfday</option>
-                <option value="absent">Absent</option>
-                <option value="ot_candidate">OT candidate</option>
-              </select>
-            </label>
-            <label>
-              Reason (required)
-              <input
-                value={editReason}
-                onChange={(e) => setEditReason(e.target.value)}
-                placeholder="Why is this change needed?"
-                required
-                minLength={3}
-              />
-            </label>
-            <button type="submit">Save edit</button>
-          </form>
-        </section>
+            <form onSubmit={(e) => void saveEdit(e)} className="edit-form">
+              <h3>Admin edit</h3>
+              <label>
+                Status
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                >
+                  <option value="present">Present</option>
+                  <option value="halfday">Halfday</option>
+                  <option value="absent">Absent</option>
+                  <option value="ot_candidate">OT candidate</option>
+                </select>
+              </label>
+              <label>
+                Reason (required)
+                <input
+                  value={editReason}
+                  onChange={(e) => setEditReason(e.target.value)}
+                  placeholder="Why is this change needed?"
+                  required
+                  minLength={3}
+                />
+              </label>
+              <button type="submit">Save edit</button>
+            </form>
+          </div>
+        </Card>
       )}
-    </main>
+    </AppShell>
   );
 }
 

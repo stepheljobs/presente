@@ -12,6 +12,7 @@ import {
   TileLayer,
   useMapEvents,
 } from 'react-leaflet';
+import { Alert, AppShell, Card } from '../components/ui';
 import { apiFetch } from '../lib/api';
 import { currentUser } from '../lib/auth';
 
@@ -136,12 +137,18 @@ export default function SitesPage() {
   }
 
   return (
-    <main className="page-pad sites-page">
-      <div className="sites-header">
-        <h2>Sites</h2>
-        {canEdit && !draft && (
+    <AppShell
+      active="sites"
+      title="Sites"
+      eyebrow="Geofenced work locations"
+      actions={
+        canEdit && !draft ? (
           <button onClick={() => setDraft(EMPTY_DRAFT)}>New site</button>
-        )}
+        ) : null
+      }
+    >
+      <div className="sites-header">
+        <p className="muted">Manage active and archived geofenced worksites.</p>
       </div>
 
       {draft && (
@@ -223,46 +230,50 @@ export default function SitesPage() {
         </form>
       )}
 
-      <ul className="site-list">
-        {sites.map((site) => (
-          <li key={site.id} className={site.archived ? 'archived' : ''}>
-            <div>
-              <strong>{site.name}</strong>
-              {site.client && <span className="muted"> · {site.client}</span>}
-              <div className="muted">
-                {site.radiusM} m geofence
-                {site.archived && ' · archived'}
+      {error && !draft && <Alert tone="error">{error}</Alert>}
+
+      <Card title="Site list">
+        <ul className="site-list">
+          {sites.map((site) => (
+            <li key={site.id} className={site.archived ? 'archived' : ''}>
+              <div>
+                <strong>{site.name}</strong>
+                {site.client && <span className="muted"> · {site.client}</span>}
+                <div className="muted">
+                  {site.radiusM} m geofence
+                  {site.archived && ' · archived'}
+                </div>
               </div>
-            </div>
-            {canEdit && (
-              <div className="row-actions">
-                <button
-                  className="secondary"
-                  onClick={() =>
-                    setDraft({
-                      id: site.id,
-                      name: site.name,
-                      client: site.client,
-                      address: site.address,
-                      lat: site.lat,
-                      lng: site.lng,
-                      radiusM: site.radiusM,
-                    })
-                  }
-                >
-                  Edit
-                </button>
-                <button className="secondary" onClick={() => toggleArchive(site)}>
-                  {site.archived ? 'Unarchive' : 'Archive'}
-                </button>
-              </div>
-            )}
-          </li>
-        ))}
-        {sites.length === 0 && !draft && (
-          <li className="muted">No sites yet — create the first one.</li>
-        )}
-      </ul>
-    </main>
+              {canEdit && (
+                <div className="row-actions">
+                  <button
+                    className="secondary"
+                    onClick={() =>
+                      setDraft({
+                        id: site.id,
+                        name: site.name,
+                        client: site.client,
+                        address: site.address,
+                        lat: site.lat,
+                        lng: site.lng,
+                        radiusM: site.radiusM,
+                      })
+                    }
+                  >
+                    Edit
+                  </button>
+                  <button className="secondary" onClick={() => toggleArchive(site)}>
+                    {site.archived ? 'Unarchive' : 'Archive'}
+                  </button>
+                </div>
+              )}
+            </li>
+          ))}
+          {sites.length === 0 && !draft && (
+            <li className="muted">No sites yet — create the first one.</li>
+          )}
+        </ul>
+      </Card>
+    </AppShell>
   );
 }

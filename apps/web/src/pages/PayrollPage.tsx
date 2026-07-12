@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Alert, AppShell, Badge, Card } from '../components/ui';
 import { apiFetch, ApiError } from '../lib/api';
 import { accessToken } from '../lib/auth';
 
@@ -195,9 +196,9 @@ export default function PayrollPage() {
   const totals = active?.totals ?? {};
 
   return (
-    <main className="page-pad">
-      {error && <p className="error" style={{ padding: '0 1.2rem' }}>{error}</p>}
-      {notice && <p className="notice" style={{ padding: '0 1.2rem' }}>{notice}</p>}
+    <AppShell active="payroll" title="Payroll" eyebrow="Run workspace">
+      {error && <Alert tone="error">{error}</Alert>}
+      {notice && <Alert tone="success">{notice}</Alert>}
 
       <section className="toolbar">
         <button type="button" onClick={() => void startRun()}>
@@ -205,8 +206,7 @@ export default function PayrollPage() {
         </button>
       </section>
 
-      <section className="card-block">
-        <h2>Runs</h2>
+      <Card title="Runs" description="Select a payroll period to review, approve, or export.">
         <ul className="worker-list">
           {runs.map((r) => (
             <li key={r.id}>
@@ -225,16 +225,16 @@ export default function PayrollPage() {
           ))}
           {runs.length === 0 && <li className="muted">No payroll runs yet.</li>}
         </ul>
-      </section>
+      </Card>
 
       {active && (
         <>
           {(active.blockingExceptions?.length ?? 0) > 0 && (
-            <section className="card-block" style={{ borderColor: '#f59e0b' }}>
-              <h2>
-                ⚠ {active.blockingExceptions.length} unresolved blocking
-                exception(s)
-              </h2>
+            <Card
+              tone="warning"
+              title={`${active.blockingExceptions.length} unresolved blocking exception(s)`}
+              description="Resolve or waive these before moving the run forward."
+            >
               <ul>
                 {active.blockingExceptions.map((e) => (
                   <li key={e.id}>
@@ -245,18 +245,13 @@ export default function PayrollPage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </Card>
           )}
 
-          <section className="card-block">
-            <div className="toolbar" style={{ padding: 0 }}>
-              <h2 style={{ margin: 0 }}>
-                {active.periodStart} – {active.periodEnd}{' '}
-                <span className={`badge status-${active.status}`}>
-                  {active.status}
-                </span>
-              </h2>
-            </div>
+          <Card
+            title={`${active.periodStart} – ${active.periodEnd}`}
+            actions={<Badge tone="neutral">{active.status}</Badge>}
+          >
 
             <div className="totals-card">
               <div>
@@ -389,9 +384,9 @@ export default function PayrollPage() {
                 <button type="submit">Add</button>
               </form>
             )}
-          </section>
+          </Card>
         </>
       )}
-    </main>
+    </AppShell>
   );
 }

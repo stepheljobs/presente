@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { Alert, AppShell, Card } from '../components/ui';
 import { apiFetch } from '../lib/api';
 import { currentUser } from '../lib/auth';
 
@@ -30,7 +31,7 @@ export default function SettingsPage() {
     });
   }, []);
 
-  if (error && !settings) return <p className="error page-pad">{error}</p>;
+  if (error && !settings) return <Alert tone="error">{error}</Alert>;
   if (!settings) return <p className="page-pad">Loading…</p>;
 
   const otPercent = Math.round(settings.otMultiplier * 100);
@@ -67,13 +68,13 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="page-pad settings-page">
-      <h2>Company settings</h2>
+    <AppShell active="settings" title="Company settings" eyebrow="Payroll rules">
       {readOnly && (
-        <p className="notice">Only the Owner can change these settings.</p>
+        <Alert tone="success">Only the Owner can change these settings.</Alert>
       )}
-      <form onSubmit={onSubmit} className="settings-form">
-        <fieldset disabled={readOnly || busy}>
+      <Card title="Attendance and payroll defaults">
+        <form onSubmit={onSubmit} className="settings-form">
+          <fieldset disabled={readOnly || busy}>
           <label className="field">
             Work week
             <div className="day-row">
@@ -187,15 +188,16 @@ export default function SettingsPage() {
             </select>
           </label>
 
-          {error && <p role="alert" className="error">{error}</p>}
-          {toast && <p className="notice" role="status">{toast}</p>}
-          {!readOnly && (
-            <button type="submit" disabled={busy}>
-              {busy ? 'Saving…' : 'Save settings'}
-            </button>
-          )}
-        </fieldset>
-      </form>
-    </main>
+            {error && <Alert tone="error">{error}</Alert>}
+            {toast && <Alert tone="success">{toast}</Alert>}
+            {!readOnly && (
+              <button type="submit" disabled={busy}>
+                {busy ? 'Saving…' : 'Save settings'}
+              </button>
+            )}
+          </fieldset>
+        </form>
+      </Card>
+    </AppShell>
   );
 }

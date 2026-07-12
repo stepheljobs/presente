@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Alert, AppShell, Badge, Card } from '../components/ui';
 import { apiFetch } from '../lib/api';
 
 interface Tag {
@@ -87,11 +88,11 @@ export default function SessionTagPage() {
 
   if (!session) {
     return (
-      <main className="page-pad">
+      <AppShell active="today" title="Session" eyebrow="Tagging workspace">
         <p className="muted" style={{ padding: '1.2rem' }}>
           {error ?? 'Loading…'}
         </p>
-      </main>
+      </AppShell>
     );
   }
 
@@ -100,14 +101,11 @@ export default function SessionTagPage() {
   );
 
   return (
-    <main className="page-pad">
-      {error && <p className="error" style={{ padding: '0 1.2rem' }}>{error}</p>}
-      {notice && <p className="notice" style={{ padding: '0 1.2rem' }}>{notice}</p>}
+    <AppShell active="today" title="Session tagging" eyebrow="Photo evidence">
+      {error && <Alert tone="error">{error}</Alert>}
+      {notice && <Alert tone="success">{notice}</Alert>}
 
-      <section className="card-block">
-        <h2>
-          Session · {session.type} · {session.siteName}
-        </h2>
+      <Card title={`Session · ${session.type} · ${session.siteName}`}>
         <p className="muted">
           Geofence:{' '}
           {session.withinFence === null
@@ -124,15 +122,14 @@ export default function SessionTagPage() {
               ` · site ${session.siteLat.toFixed(5)}, ${session.siteLng?.toFixed(5)} r=${session.radiusM}m`}
           </p>
         )}
-      </section>
+      </Card>
 
       <div className="tag-workspace">
-        <section className="card-block">
-          <h3>Photos</h3>
+        <Card title="Photos">
           {session.photos.map((p) => (
             <div key={p.id} className="photo-tile">
               <div className="photo-placeholder">{p.storageKey.slice(-24)}</div>
-              <span className="badge">{p.recognitionStatus}</span>
+              <Badge>{p.recognitionStatus}</Badge>
             </div>
           ))}
           <h3>Tags</h3>
@@ -143,7 +140,7 @@ export default function SessionTagPage() {
                 {t.status}
                 {t.band && ` · ${t.band}`}
                 {t.notice?.flag === 'manual_tag_admin' && (
-                  <span className="badge">admin</span>
+                  <Badge>admin</Badge>
                 )}
                 {t.status === 'active' && (
                   <button
@@ -159,10 +156,9 @@ export default function SessionTagPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
 
-        <section className="card-block">
-          <h3>Roster</h3>
+        <Card title="Roster">
           <label className="edit-form">
             Reason (required for admin actions)
             <input
@@ -199,8 +195,8 @@ export default function SessionTagPage() {
           <p className="muted">
             <Link to="/exceptions">Back to exceptions</Link>
           </p>
-        </section>
+        </Card>
       </div>
-    </main>
+    </AppShell>
   );
 }
