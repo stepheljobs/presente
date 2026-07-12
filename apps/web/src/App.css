@@ -164,7 +164,17 @@ input[type='range'] {
   padding-bottom: 0.1rem;
 }
 
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 0.2rem;
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+}
+
 .nav-links a,
+.topbar-nav a,
 .topbar > a:not(.brand),
 .topbar strong {
   display: inline-flex;
@@ -179,6 +189,7 @@ input[type='range'] {
 }
 
 .nav-links a:hover,
+.topbar-nav a:hover,
 .topbar > a:not(.brand):hover {
   background: var(--surface-strong);
   color: var(--text);
@@ -189,6 +200,26 @@ input[type='range'] {
 .topbar strong {
   background: var(--primary-soft);
   color: var(--primary-strong) !important;
+}
+
+.topbar .whoami {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.topbar-signout {
+  min-height: 2.25rem;
+  border-color: #f1b8b1;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.86rem;
+  padding: 0.42rem 0.7rem;
+}
+
+.topbar-signout:hover:not(:disabled) {
+  background: #ffe2dd;
+  color: var(--danger);
 }
 
 .page-wrap,
