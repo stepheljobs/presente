@@ -5,11 +5,19 @@ import {
   ExceptionSweepJob,
   LookalikesController,
 } from './exceptions.controller';
-import { SessionsController } from './sessions.controller';
+import {
+  SessionsController,
+  WorkerDaysController,
+} from './sessions.controller';
 import { SessionsService } from './sessions.service';
 
 @Module({
-  controllers: [SessionsController, ExceptionsController, LookalikesController],
+  controllers: [
+    SessionsController,
+    ExceptionsController,
+    LookalikesController,
+    WorkerDaysController,
+  ],
   providers: [SessionsService, CaptureService, ExceptionSweepJob],
   exports: [CaptureService],
 })

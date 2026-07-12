@@ -5,6 +5,9 @@ import { DatabaseService } from '../database/database.service';
 import { evaluateGeofence } from '../sites/geofence';
 import { IngestSessionDto } from './sessions.controller';
 
+/** E5-S06 / PRD §7: drift beyond 10 minutes flags the device. */
+export const CLOCK_DRIFT_THRESHOLD_SECONDS = 600;
+
 interface SessionRow {
   id: string;
   type: string;
@@ -22,6 +25,7 @@ interface SessionRow {
   distance_m: number | null;
   within_fence: boolean | null;
   mock_location: boolean;
+  clock_drift_flagged?: boolean;
 }
 
 @Injectable()
@@ -129,6 +133,31 @@ export class SessionsService {
             [uuid, dto.siteId ?? null],
           );
         }
+
+        // E5-S06: drift > 10 min flags every session from this device.
+        if (Math.abs(row.clock_drift_seconds) > CLOCK_DRIFT_THRESHOLD_SECONDS) {
+          await client.query(
+            `UPDATE attendance_sessions
+             SET clock_drift_flagged = true
+             WHERE device_id = $1`,
+            [dto.deviceId],
+          );
+          await client.query(
+            `INSERT INTO exceptions
+               (tenant_id, type, severity, session_id, site_id, note)
+             VALUES (NULLIF(current_setting('app.tenant_id', true), '')::uuid,
+                     'clock_drift', 2, $1, $2, $3)`,
+            [
+              uuid,
+              dto.siteId ?? null,
+              `Device ${dto.deviceId} drift ${row.clock_drift_seconds}s (>${CLOCK_DRIFT_THRESHOLD_SECONDS}s)`,
+            ],
+          );
+          row = {
+            ...row,
+            clock_drift_flagged: true,
+          } as SessionRow & { clock_drift_flagged: boolean };
+        }
       } else {
         const existing = await client.query<SessionRow>(
           'SELECT * FROM attendance_sessions WHERE id = $1',
@@ -158,6 +187,7 @@ export class SessionsService {
       distanceM: row.distance_m,
       withinFence: row.within_fence,
       mockLocation: row.mock_location,
+      clockDriftFlagged: Boolean(row.clock_drift_flagged),
     };
   }
 }

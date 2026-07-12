@@ -22,6 +22,7 @@ import {
   type ServerTag,
   type WorkerDto,
 } from '../../lib/capture';
+import { hasPendingRecognition } from '../../lib/sync';
 
 /**
  * E4-S11–S15: tagging screen — auto chips (after sync), confirm cards,
@@ -323,13 +324,22 @@ export default function TagScreen() {
         {session.photos.length} photo
         {session.photos.length === 1 ? '' : 's'} ·{' '}
         {server
-          ? server.photos[0]?.recognitionStatus === 'done'
-            ? 'recognition done'
-            : server.photos[0]?.recognitionStatus === 'pending'
-              ? 'pending recognition'
-              : server.photos[0]?.recognitionStatus ?? 'synced'
+          ? hasPendingRecognition(server)
+            ? 'pending recognition'
+            : 'recognition done'
           : 'not yet synced'}
       </Text>
+
+      {/* E5-S07: offline / pre-cloud faces show pending-recognition chips. */}
+      {(!server || hasPendingRecognition(server)) && (
+        <View style={styles.chips}>
+          {session.photos.map((p) => (
+            <View key={p.id} style={styles.chipPending}>
+              <Text style={styles.chipText}>pending recognition</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {!server && (
         <Pressable
@@ -464,6 +474,12 @@ const styles = StyleSheet.create({
   },
   chipGray: {
     backgroundColor: '#e5e7eb',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  chipPending: {
+    backgroundColor: '#e0e7ff',
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,

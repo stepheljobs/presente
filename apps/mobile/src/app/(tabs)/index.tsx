@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../lib/auth-context';
 import { listQueuedSessions } from '../../lib/capture';
 import { kvGet, kvSet } from '../../lib/db';
+import { useSync } from '../../lib/sync-context';
 
 /**
  * Home: Time In / Time Out entry points (E4-S02) plus the E0-S09
@@ -11,6 +12,7 @@ import { kvGet, kvSet } from '../../lib/db';
  */
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
+  const { pill } = useSync();
   const [firstLaunch, setFirstLaunch] = useState<string | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [pending, setPending] = useState(0);
@@ -33,7 +35,7 @@ export default function HomeScreen() {
         setDbError(err instanceof Error ? err.message : String(err));
       }
     })();
-  }, []);
+  }, [pill]);
 
   return (
     <View style={styles.container}>

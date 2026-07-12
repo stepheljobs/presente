@@ -37,11 +37,14 @@ export class CaptureService {
     private readonly recognition: RecognitionProvider,
   ) {}
 
-  /** E4-S04/S08: bind photos to a session; then run the cloud pass (S09). */
+  /**
+   * E4-S04/S08 + E5-S04: bind photos to a session; re-verify client hash
+   * when the client also sends a post-upload digest (tamper_flag on mismatch).
+   */
   async submitPhotos(
     actor: AuthUser,
     sessionId: string,
-    photos: { storageKey: string; sha256?: string }[],
+    photos: { storageKey: string; sha256?: string; sha256Verified?: string }[],
   ) {
     const photoIds = await this.db.withTenant(
       actor.tenantId,
@@ -53,11 +56,18 @@ export class CaptureService {
         if (!session.rowCount) throw new NotFoundException('Session not found');
         const ids: string[] = [];
         for (const photo of photos) {
+          // E5-S04: client re-hash after upload must match capture hash.
+          const tamper =
+            Boolean(photo.sha256) &&
+            Boolean(photo.sha256Verified) &&
+            photo.sha256 !== photo.sha256Verified;
           const result = await client.query<{ id: string }>(
-            `INSERT INTO session_photos (tenant_id, session_id, storage_key, sha256_client)
-             VALUES (NULLIF(current_setting('app.tenant_id', true), '')::uuid, $1, $2, $3)
+            `INSERT INTO session_photos
+               (tenant_id, session_id, storage_key, sha256_client, tamper_flag)
+             VALUES (NULLIF(current_setting('app.tenant_id', true), '')::uuid,
+                     $1, $2, $3, $4)
              RETURNING id`,
-            [sessionId, photo.storageKey, photo.sha256 ?? null],
+            [sessionId, photo.storageKey, photo.sha256 ?? null, tamper],
           );
           ids.push(result.rows[0].id);
         }
@@ -171,6 +181,38 @@ export class CaptureService {
       }
 
       await this.db.withTenant(tenantId, async (client) => {
+        const scope = await this.sessionDayScope(client, sessionId);
+        const manuals = await client.query<{
+          id: string;
+          worker_id: string;
+          source: string;
+        }>(
+          `SELECT id, worker_id, source FROM session_tags
+           WHERE session_id = $1 AND photo_id IS NOT DISTINCT FROM $2
+             AND worker_id IS NOT NULL
+             AND source IN ('manual', 'confirmed')
+             AND status = 'active'`,
+          [sessionId, photo.id],
+        );
+        // Also include session-level manuals without a photo bind.
+        const sessionManuals = await client.query<{
+          id: string;
+          worker_id: string;
+          source: string;
+        }>(
+          `SELECT id, worker_id, source FROM session_tags
+           WHERE session_id = $1 AND photo_id IS NULL
+             AND worker_id IS NOT NULL
+             AND source IN ('manual', 'confirmed')
+             AND status = 'active'`,
+          [sessionId],
+        );
+        const allManuals = [...manuals.rows, ...sessionManuals.rows];
+        const manualWorkerIds = new Set(allManuals.map((m) => m.worker_id));
+
+        const autoMatches: { workerId: string; band: Band; confidence: number }[] =
+          [];
+
         for (const face of faces) {
           let band: Band = face.workerId
             ? bandFor(face.confidence, context.thresholds)
@@ -184,6 +226,73 @@ export class CaptureService {
             band = 'confirm';
             notice = { forcedConfirm: 'lookalike_pair' };
           }
+
+          // E5-S08: agreement with an existing manual tag → confirm, skip auto row.
+          if (face.workerId && manualWorkerIds.has(face.workerId) && band !== 'unrecognized') {
+            await client.query(
+              `UPDATE session_tags
+               SET notice = coalesce(notice, '{}'::jsonb)
+                              || '{"recognitionAgreed":true}'::jsonb
+               WHERE session_id = $1 AND worker_id = $2 AND status = 'active'
+                 AND source IN ('manual', 'confirmed')`,
+              [sessionId, face.workerId],
+            );
+            await this.audit.log(client, {
+              actor: null,
+              action: 'recognition.agree_manual',
+              entity: `session:${sessionId}`,
+              after: { workerId: face.workerId, confidence: face.confidence },
+            });
+            continue;
+          }
+
+          // E5-S05: admin-edited worker-day wins; engineer auto tag suppressed.
+          if (face.workerId && scope && band !== 'unrecognized') {
+            const locked = await this.isAdminEditedDay(
+              client,
+              face.workerId,
+              scope.siteId,
+              scope.day,
+            );
+            if (locked) {
+              await client.query(
+                `INSERT INTO session_tags
+                   (tenant_id, session_id, photo_id, worker_id, band, confidence,
+                    source, status, notice)
+                 VALUES (NULLIF(current_setting('app.tenant_id', true), '')::uuid,
+                         $1, $2, $3, $4, $5, 'auto', 'suppressed_admin', $6)`,
+                [
+                  sessionId,
+                  photo.id,
+                  face.workerId,
+                  band,
+                  face.confidence,
+                  JSON.stringify({ reason: 'admin_edit_wins' }),
+                ],
+              );
+              await this.audit.log(client, {
+                actor: null,
+                action: 'sync.conflict_admin_wins',
+                entity: `session:${sessionId}`,
+                after: {
+                  workerId: face.workerId,
+                  engineerBand: band,
+                  confidence: face.confidence,
+                },
+                reason: 'Admin-edited worker-day retained; engineer tag suppressed',
+              });
+              continue;
+            }
+          }
+
+          if (face.workerId && band !== 'unrecognized') {
+            autoMatches.push({
+              workerId: face.workerId,
+              band,
+              confidence: face.confidence,
+            });
+          }
+
           await client.query(
             `INSERT INTO session_tags
                (tenant_id, session_id, photo_id, worker_id, band, confidence,
@@ -201,6 +310,41 @@ export class CaptureService {
             ],
           );
         }
+
+        // E5-S08: high auto match disagrees with a manual tag on the same photo.
+        for (const manual of allManuals) {
+          const agreed = autoMatches.some((a) => a.workerId === manual.worker_id);
+          const rival = autoMatches.find(
+            (a) =>
+              a.workerId !== manual.worker_id &&
+              (a.band === 'high' || a.band === 'confirm'),
+          );
+          if (!agreed && rival) {
+            await client.query(
+              `INSERT INTO exceptions
+                 (tenant_id, type, severity, worker_id, session_id, note)
+               VALUES (NULLIF(current_setting('app.tenant_id', true), '')::uuid,
+                       'recognition_disagreement', 2, $1, $2, $3)`,
+              [
+                manual.worker_id,
+                sessionId,
+                `Manual tag vs recognition match ${rival.workerId} (${rival.band})`,
+              ],
+            );
+            await this.audit.log(client, {
+              actor: null,
+              action: 'recognition.disagree_manual',
+              entity: `session:${sessionId}`,
+              before: { manualWorkerId: manual.worker_id },
+              after: {
+                recognitionWorkerId: rival.workerId,
+                band: rival.band,
+              },
+              reason: 'Never overwrite manual tag (E5-S08)',
+            });
+          }
+        }
+
         await client.query(
           `UPDATE session_photos SET recognition_status = 'done' WHERE id = $1`,
           [photo.id],
@@ -208,6 +352,89 @@ export class CaptureService {
       });
     }
     await this.applyDuplicateProtection(tenantId, sessionId);
+  }
+
+  private async sessionDayScope(
+    client: PoolClient,
+    sessionId: string,
+  ): Promise<{ siteId: string | null; day: string } | null> {
+    const result = await client.query<{ site_id: string | null; day: string }>(
+      `SELECT s.site_id,
+              ((s.device_captured_at AT TIME ZONE cs.timezone)::date)::text AS day
+       FROM attendance_sessions s
+       JOIN company_settings cs ON cs.tenant_id = s.tenant_id
+       WHERE s.id = $1`,
+      [sessionId],
+    );
+    if (!result.rowCount) return null;
+    return { siteId: result.rows[0].site_id, day: result.rows[0].day };
+  }
+
+  private async isAdminEditedDay(
+    client: PoolClient,
+    workerId: string,
+    siteId: string | null,
+    day: string,
+  ): Promise<boolean> {
+    if (!siteId) return false;
+    const result = await client.query(
+      `SELECT 1 FROM worker_day_admin_edits
+       WHERE worker_id = $1 AND site_id = $2 AND day = $3::date`,
+      [workerId, siteId, day],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /**
+   * E5-S05 / E6-S04 seed: record that an admin edited a worker-day so late
+   * engineer sync cannot silently overwrite it.
+   */
+  async recordAdminDayEdit(
+    actor: AuthUser,
+    input: {
+      workerId: string;
+      siteId: string;
+      day: string;
+      reason: string;
+      before?: unknown;
+      after?: unknown;
+    },
+  ) {
+    if (actor.role === 'engineer') {
+      throw new BadRequestException('Engineers cannot lock worker-days');
+    }
+    return this.db.withTenant(actor.tenantId, async (client) => {
+      await client.query(
+        `INSERT INTO worker_day_admin_edits
+           (tenant_id, worker_id, site_id, day, edited_by, reason, before, after)
+         VALUES (NULLIF(current_setting('app.tenant_id', true), '')::uuid,
+                 $1, $2, $3::date, $4, $5, $6, $7)
+         ON CONFLICT (tenant_id, worker_id, day, site_id) DO UPDATE SET
+           edited_by = excluded.edited_by,
+           edited_at = now(),
+           reason = excluded.reason,
+           before = excluded.before,
+           after = excluded.after`,
+        [
+          input.workerId,
+          input.siteId,
+          input.day,
+          actor.sub,
+          input.reason,
+          input.before === undefined ? null : JSON.stringify(input.before),
+          input.after === undefined ? null : JSON.stringify(input.after),
+        ],
+      );
+      await this.audit.log(client, {
+        actor: actor.sub,
+        action: 'worker_day.admin_edit',
+        entity: `worker:${input.workerId}`,
+        before: input.before,
+        after: input.after,
+        reason: input.reason,
+      });
+      return { locked: true };
+    });
   }
 
   /**
@@ -338,6 +565,31 @@ export class CaptureService {
     workerId: string,
     actor: AuthUser,
   ) {
+    const scope = await this.sessionDayScope(client, sessionId);
+    // E5-S05: late engineer manual tag on an admin-edited day is suppressed.
+    if (
+      actor.role === 'engineer' &&
+      scope &&
+      (await this.isAdminEditedDay(client, workerId, scope.siteId, scope.day))
+    ) {
+      await client.query(
+        `INSERT INTO session_tags
+           (tenant_id, session_id, photo_id, worker_id, source, status, notice, created_by)
+         VALUES (NULLIF(current_setting('app.tenant_id', true), '')::uuid,
+                 $1, $2, $3, 'manual', 'suppressed_admin',
+                 '{"flag":"manual_tag","reason":"admin_edit_wins"}'::jsonb, $4)`,
+        [sessionId, photoId, workerId, actor.sub],
+      );
+      await this.audit.log(client, {
+        actor: actor.sub,
+        action: 'sync.conflict_admin_wins',
+        entity: `session:${sessionId}`,
+        after: { workerId, source: 'manual' },
+        reason: 'Admin-edited worker-day retained; engineer manual tag suppressed',
+      });
+      return;
+    }
+
     await client.query(
       `INSERT INTO session_tags
          (tenant_id, session_id, photo_id, worker_id, source, status, notice, created_by)
