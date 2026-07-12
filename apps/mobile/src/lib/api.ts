@@ -1,6 +1,6 @@
 import { accessToken } from './auth';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://api.vibepost.codes';
 
 export async function apiFetch<T>(
   path: string,

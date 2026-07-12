@@ -4,7 +4,7 @@
  */
 import { decodeJwt, isExpired, Role } from './jwt';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://api.vibepost.codes';
 const TOKEN_KEY = 'presente.accessToken';
 
 export interface SessionUser {
