@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
+import { Alert, AppShell, Card, TableWrap } from '../components/ui';
 import { apiFetch } from '../lib/api';
 import { accessToken } from '../lib/auth';
-import { TopNav } from './DashboardPage';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
@@ -93,9 +93,8 @@ export default function ReportsPage() {
   }
 
   return (
-    <main className="page-pad">
-      <TopNav active="reports" />
-      {error && <p className="error" style={{ padding: '0 1.2rem' }}>{error}</p>}
+    <AppShell active="reports" title="Reports" eyebrow="Evidence and trends">
+      {error && <Alert tone="error">{error}</Alert>}
 
       <section className="toolbar">
         <label>
@@ -117,8 +116,7 @@ export default function ReportsPage() {
       </section>
 
       {padding && (
-        <section className="card-block">
-          <h2>Padding indicators</h2>
+        <Card title="Padding indicators" description="Signals that may need review before payroll.">
           <div className="headcount-grid">
             <div className="headcount-card">
               <strong>Most manually tagged</strong>
@@ -179,43 +177,42 @@ export default function ReportsPage() {
               </ul>
             </div>
           </div>
-        </section>
+        </Card>
       )}
 
       {attendance && (
-        <section className="card-block">
-          <h2>
-            Attendance summary · {attendance.totals.present} present ·{' '}
-            {attendance.totals.halfday} halfday · {attendance.totals.hours.toFixed(1)}h
-          </h2>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Worker</th>
-                <th>Site</th>
-                <th>Day</th>
-                <th>Status</th>
-                <th>Hours</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attendance.items.slice(0, 100).map((r, i) => (
-                <tr key={i}>
-                  <td>{r.workerName}</td>
-                  <td>{r.siteName}</td>
-                  <td>{r.day}</td>
-                  <td>{r.status}</td>
-                  <td>{r.hours}</td>
+        <Card
+          title={`Attendance summary · ${attendance.totals.present} present · ${attendance.totals.halfday} halfday · ${attendance.totals.hours.toFixed(1)}h`}
+        >
+          <TableWrap>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Worker</th>
+                  <th>Site</th>
+                  <th>Day</th>
+                  <th>Status</th>
+                  <th>Hours</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+              </thead>
+              <tbody>
+                {attendance.items.slice(0, 100).map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.workerName}</td>
+                    <td>{r.siteName}</td>
+                    <td>{r.day}</td>
+                    <td>{r.status}</td>
+                    <td>{r.hours}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableWrap>
+        </Card>
       )}
 
       {ot && (
-        <section className="card-block">
-          <h2>OT report</h2>
+        <Card title="OT report">
           <h3>Photo-verified OT</h3>
           <ul className="muted">
             {ot.photoOt.map((r, i) => (
@@ -235,34 +232,35 @@ export default function ReportsPage() {
             ))}
             {ot.manualOt.length === 0 && <li>None</li>}
           </ul>
-        </section>
+        </Card>
       )}
 
       {trends && (
-        <section className="card-block">
-          <h2>Exception trends</h2>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Count</th>
-                <th>Median resolve (s)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trends.byType.map((t) => (
-                <tr key={t.type}>
-                  <td>{t.type}</td>
-                  <td>{t.count}</td>
-                  <td>
-                    {t.medianResolveSeconds == null
-                      ? '—'
-                      : Math.round(t.medianResolveSeconds)}
-                  </td>
+        <Card title="Exception trends">
+          <TableWrap>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Count</th>
+                  <th>Median resolve (s)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {trends.byType.map((t) => (
+                  <tr key={t.type}>
+                    <td>{t.type}</td>
+                    <td>{t.count}</td>
+                    <td>
+                      {t.medianResolveSeconds == null
+                        ? '—'
+                        : Math.round(t.medianResolveSeconds)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableWrap>
           <h3>By engineer</h3>
           <ul className="muted">
             {trends.byEngineer.map((e) => (
@@ -271,9 +269,9 @@ export default function ReportsPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
       )}
-    </main>
+    </AppShell>
   );
 }
 

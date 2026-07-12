@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Alert, AppShell, Badge, Card, EmptyState, TableWrap } from '../components/ui';
 import { apiFetch } from '../lib/api';
 
 interface Headcount {
@@ -58,14 +59,15 @@ export default function DashboardPage() {
   }, [load]);
 
   return (
-    <main className="page-pad">
-      <TopNav active="today" />
-      {error && <p className="error" style={{ padding: '0 1.2rem' }}>{error}</p>}
+    <AppShell active="today" title="Today" eyebrow="Live operations">
+      {error && <Alert tone="error">{error}</Alert>}
 
-      <section className="card-block">
-        <h2>Today by site</h2>
+      <Card
+        title="Today by site"
+        description="Current tagged headcount against each active roster."
+      >
         {sites.length === 0 ? (
-          <p className="muted">No active sites or sessions today.</p>
+          <EmptyState>No active sites or sessions today.</EmptyState>
         ) : (
           <div className="headcount-grid">
             {sites.map((s) => (
@@ -79,10 +81,12 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
-      </section>
+      </Card>
 
-      <section className="card-block">
-        <h2>Live photo feed</h2>
+      <Card
+        title="Live photo feed"
+        description="Recent capture sessions ready for review or tagging."
+      >
         <div className="photo-feed">
           {photos.map((p) => (
             <Link
@@ -98,77 +102,54 @@ export default function DashboardPage() {
                   minute: '2-digit',
                 })}
               </span>
-              <span className="badge">{p.recognitionStatus}</span>
+              <Badge>{p.recognitionStatus}</Badge>
             </Link>
           ))}
           {photos.length === 0 && (
-            <p className="muted">No session photos yet today.</p>
+            <EmptyState>No session photos yet today.</EmptyState>
           )}
         </div>
-      </section>
+      </Card>
 
-      <section className="card-block">
-        <h2>Engineer devices</h2>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Engineer</th>
-              <th>Device</th>
-              <th>Last sync</th>
-              <th>24h sessions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {devices.map((d) => (
-              <tr key={d.deviceId + d.engineerEmail} className={d.stale ? 'stale-row' : ''}>
-                <td>{d.engineerEmail}</td>
-                <td className="mono">{d.deviceId}</td>
-                <td>
-                  {d.lastSync
-                    ? new Date(d.lastSync).toLocaleString()
-                    : 'never'}
-                  {d.stale && <span className="badge">stale</span>}
-                </td>
-                <td>{d.sessions24h}</td>
-              </tr>
-            ))}
-            {devices.length === 0 && (
+      <Card title="Engineer devices" description="Sync health from field devices.">
+        <TableWrap>
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan={4} className="muted">
-                  No devices have synced sessions yet.
-                </td>
+                <th>Engineer</th>
+                <th>Device</th>
+                <th>Last sync</th>
+                <th>24h sessions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
-    </main>
-  );
-}
-
-export function TopNav({ active }: { active: string }) {
-  return (
-    <header className="topbar">
-      <Link to="/" className="brand">
-        Presente
-      </Link>
-      <Link to="/" className={active === 'today' ? 'nav-active' : ''}>
-        Today
-      </Link>
-      <Link
-        to="/exceptions"
-        className={active === 'exceptions' ? 'nav-active' : ''}
-      >
-        Exceptions
-      </Link>
-      <Link to="/reports" className={active === 'reports' ? 'nav-active' : ''}>
-        Reports
-      </Link>
-      <Link to="/attendance">Attendance</Link>
-      <Link to="/payroll">Payroll</Link>
-      <Link to="/sites">Sites</Link>
-      <Link to="/workers">Workers</Link>
-      <Link to="/settings">Settings</Link>
-    </header>
+            </thead>
+            <tbody>
+              {devices.map((d) => (
+                <tr
+                  key={d.deviceId + d.engineerEmail}
+                  className={d.stale ? 'stale-row' : ''}
+                >
+                  <td>{d.engineerEmail}</td>
+                  <td className="mono">{d.deviceId}</td>
+                  <td>
+                    {d.lastSync
+                      ? new Date(d.lastSync).toLocaleString()
+                      : 'never'}
+                    {d.stale && <Badge tone="warning">stale</Badge>}
+                  </td>
+                  <td>{d.sessions24h}</td>
+                </tr>
+              ))}
+              {devices.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    No devices have synced sessions yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </TableWrap>
+      </Card>
+    </AppShell>
   );
 }

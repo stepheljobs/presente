@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Alert, AppShell, Card } from '../components/ui';
 import { apiFetch } from '../lib/api';
 
 interface Worker {
@@ -66,13 +66,9 @@ export default function WorkersPage() {
   };
 
   return (
-    <main className="page-pad workers-page">
-      <nav className="crumbs">
-        <Link to="/">← Dashboard</Link>
-      </nav>
-      <h2>Workers</h2>
-      {error && <p role="alert" className="error">{error}</p>}
-      {notice && <p className="notice" role="status">{notice}</p>}
+    <AppShell active="workers" title="Workers" eyebrow="Roster and enrollment">
+      {error && <Alert tone="error">{error}</Alert>}
+      {notice && <Alert tone="success">{notice}</Alert>}
 
       {pending.length > 0 && (
         <section className="approval-section">
@@ -85,39 +81,38 @@ export default function WorkersPage() {
 
       <CsvImport onImported={() => refresh()} />
 
-      <h3>
-        All workers {data ? `(${data.total})` : ''}
-      </h3>
-      <ul className="worker-list">
-        {data?.items.map((w) => (
-          <WorkerRow key={w.id} worker={w} onAction={act} />
-        ))}
-        {data && data.items.length === 0 && (
-          <li className="muted">No workers yet — add them via CSV import or the mobile app.</li>
+      <Card title={`All workers ${data ? `(${data.total})` : ''}`}>
+        <ul className="worker-list">
+          {data?.items.map((w) => (
+            <WorkerRow key={w.id} worker={w} onAction={act} />
+          ))}
+          {data && data.items.length === 0 && (
+            <li className="muted">No workers yet — add them via CSV import or the mobile app.</li>
+          )}
+        </ul>
+        {data && data.total > PAGE_SIZE && (
+          <div className="pager">
+            <button
+              className="secondary"
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              ← Prev
+            </button>
+            <span className="muted">
+              Page {page} of {Math.ceil(data.total / PAGE_SIZE)}
+            </span>
+            <button
+              className="secondary"
+              disabled={page >= Math.ceil(data.total / PAGE_SIZE)}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next →
+            </button>
+          </div>
         )}
-      </ul>
-      {data && data.total > PAGE_SIZE && (
-        <div className="pager">
-          <button
-            className="secondary"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            ← Prev
-          </button>
-          <span className="muted">
-            Page {page} of {Math.ceil(data.total / PAGE_SIZE)}
-          </span>
-          <button
-            className="secondary"
-            disabled={page >= Math.ceil(data.total / PAGE_SIZE)}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next →
-          </button>
-        </div>
-      )}
-    </main>
+      </Card>
+    </AppShell>
   );
 }
 

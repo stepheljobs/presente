@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Alert, AppShell, Badge, Card, TableWrap } from '../components/ui';
 import { apiFetch } from '../lib/api';
-import { TopNav } from './DashboardPage';
 
 interface ExceptionItem {
   id: string;
@@ -119,10 +119,9 @@ export default function ExceptionsPage() {
     : [];
 
   return (
-    <main className="page-pad">
-      <TopNav active="exceptions" />
-      {error && <p className="error" style={{ padding: '0 1.2rem' }}>{error}</p>}
-      {notice && <p className="notice" style={{ padding: '0 1.2rem' }}>{notice}</p>}
+    <AppShell active="exceptions" title="Exceptions" eyebrow="Resolution queue">
+      {error && <Alert tone="error">{error}</Alert>}
+      {notice && <Alert tone="success">{notice}</Alert>}
 
       <section className="toolbar">
         <label>
@@ -141,60 +140,60 @@ export default function ExceptionsPage() {
         <span className="muted">{items.length} open</span>
       </section>
 
-      <section className="card-block">
-        <h2>Exceptions queue</h2>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Sev</th>
-              <th>Type</th>
-              <th>Worker</th>
-              <th>Site</th>
-              <th>Day</th>
-              <th>Note</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((e) => (
-              <tr
-                key={e.id}
-                className="clickable"
-                onClick={() => {
-                  setSelected(e);
-                  setNote(e.note ?? '');
-                }}
-              >
-                <td>{e.severity}</td>
-                <td>
-                  <span className="badge">{e.type}</span>
-                </td>
-                <td>{e.workerName ?? '—'}</td>
-                <td>{e.siteName ?? '—'}</td>
-                <td>{e.day ?? '—'}</td>
-                <td className="muted">{e.note ?? ''}</td>
-              </tr>
-            ))}
-            {items.length === 0 && (
+      <Card title="Exceptions queue" description="Severity-sorted issues that need review.">
+        <TableWrap>
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan={6} className="muted">
-                  Queue is clear.
-                </td>
+                <th>Sev</th>
+                <th>Type</th>
+                <th>Worker</th>
+                <th>Site</th>
+                <th>Day</th>
+                <th>Note</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody>
+              {items.map((e) => (
+                <tr
+                  key={e.id}
+                  className="clickable"
+                  onClick={() => {
+                    setSelected(e);
+                    setNote(e.note ?? '');
+                  }}
+                >
+                  <td>{e.severity}</td>
+                  <td>
+                    <Badge>{e.type}</Badge>
+                  </td>
+                  <td>{e.workerName ?? '—'}</td>
+                  <td>{e.siteName ?? '—'}</td>
+                  <td>{e.day ?? '—'}</td>
+                  <td className="muted">{e.note ?? ''}</td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    Queue is clear.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </TableWrap>
+      </Card>
 
       {selected && (
-        <section className="card-block resolver">
-          <div className="toolbar" style={{ padding: 0 }}>
-            <h2 style={{ margin: 0 }}>
-              Resolve · {selected.type}
-            </h2>
-            <button type="button" onClick={() => setSelected(null)}>
+        <Card
+          title={`Resolve · ${selected.type}`}
+          actions={
+            <button type="button" className="secondary" onClick={() => setSelected(null)}>
               Close
             </button>
-          </div>
+          }
+        >
           <p>
             {selected.workerName} · {selected.siteName} · {selected.day}
           </p>
@@ -234,9 +233,8 @@ export default function ExceptionsPage() {
               </button>
             ))}
           </div>
-        </section>
+        </Card>
       )}
-    </main>
+    </AppShell>
   );
 }
-
