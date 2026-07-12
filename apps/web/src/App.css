@@ -60,14 +60,71 @@
 .topbar {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.8rem 1.2rem;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  padding: 0.75rem 1.2rem;
   border-bottom: 1px solid #ddd;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .topbar .brand {
   font-weight: 700;
-  margin-right: auto;
+  color: #14532d;
+  text-decoration: none;
+  margin-right: 0.25rem;
+}
+
+.topbar-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+  flex: 1;
+}
+
+.topbar-nav a {
+  color: #374151;
+  text-decoration: none;
+  font-size: 0.92rem;
+  padding: 0.2rem 0;
+  border-bottom: 2px solid transparent;
+}
+
+.topbar-nav a:hover {
+  color: #14532d;
+}
+
+.topbar-nav a.nav-active {
+  color: #14532d;
+  font-weight: 700;
+  border-bottom-color: #14532d;
+}
+
+.topbar .whoami {
+  font-size: 0.85rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+.topbar-signout {
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 5px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #b91c1c;
+}
+
+.topbar-signout:hover {
+  background: #fef2f2;
+}
+
+.app-shell {
+  min-height: 100vh;
 }
 
 .empty-state {
@@ -322,11 +379,6 @@
   .tag-workspace {
     grid-template-columns: 1fr;
   }
-}
-
-.nav-active {
-  font-weight: 700;
-  color: #14532d;
 }
 
 .resolver .row-actions {

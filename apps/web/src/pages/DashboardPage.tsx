@@ -59,7 +59,6 @@ export default function DashboardPage() {
 
   return (
     <main className="page-pad">
-      <TopNav active="today" />
       {error && <p className="error" style={{ padding: '0 1.2rem' }}>{error}</p>}
 
       <section className="card-block">
@@ -143,32 +142,5 @@ export default function DashboardPage() {
         </table>
       </section>
     </main>
-  );
-}
-
-export function TopNav({ active }: { active: string }) {
-  return (
-    <header className="topbar">
-      <Link to="/" className="brand">
-        Presente
-      </Link>
-      <Link to="/" className={active === 'today' ? 'nav-active' : ''}>
-        Today
-      </Link>
-      <Link
-        to="/exceptions"
-        className={active === 'exceptions' ? 'nav-active' : ''}
-      >
-        Exceptions
-      </Link>
-      <Link to="/reports" className={active === 'reports' ? 'nav-active' : ''}>
-        Reports
-      </Link>
-      <Link to="/attendance">Attendance</Link>
-      <Link to="/payroll">Payroll</Link>
-      <Link to="/sites">Sites</Link>
-      <Link to="/workers">Workers</Link>
-      <Link to="/settings">Settings</Link>
-    </header>
   );
 }

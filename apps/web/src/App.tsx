@@ -5,6 +5,7 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom';
+import AppLayout from './components/AppLayout';
 import { currentUser } from './lib/auth';
 import AcceptInvitePage from './pages/AcceptInvitePage';
 import AttendancePage from './pages/AttendancePage';
@@ -29,7 +30,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
       <Navigate to="/login" replace state={{ from: location.pathname }} />
     );
   }
-  return children;
+  return <AppLayout>{children}</AppLayout>;
 }
 
 export default function App() {

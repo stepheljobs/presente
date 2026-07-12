@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
 import { currentUser } from '../lib/auth';
 
@@ -69,9 +68,6 @@ export default function SettingsPage() {
 
   return (
     <main className="page-pad settings-page">
-      <nav className="crumbs">
-        <Link to="/">← Dashboard</Link>
-      </nav>
       <h2>Company settings</h2>
       {readOnly && (
         <p className="notice">Only the Owner can change these settings.</p>

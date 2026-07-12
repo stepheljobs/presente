@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
-import { TopNav } from './DashboardPage';
 
 interface ExceptionItem {
   id: string;
@@ -120,7 +119,6 @@ export default function ExceptionsPage() {
 
   return (
     <main className="page-pad">
-      <TopNav active="exceptions" />
       {error && <p className="error" style={{ padding: '0 1.2rem' }}>{error}</p>}
       {notice && <p className="notice" style={{ padding: '0 1.2rem' }}>{notice}</p>}
 
