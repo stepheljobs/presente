@@ -2,12 +2,29 @@
 
 Photo-first attendance and gross payroll for Philippine construction contractors. An engineer photographs the crew at time-in/time-out; face recognition tags workers; admins resolve exceptions and approve payroll from evidence, not memory.
 
-Product docs live in [docs/](docs/) — product brief, PRD, user flows, and the atomic story backlog ([04-atomic-stories.md](docs/04-atomic-stories.md)) that work is delivered against, one story at a time (`E0-S01`, `E0-S02`, …).
+Product docs live in [docs/](docs/) — product brief, PRD, user flows, and the atomic story backlog ([04-atomic-stories.md](docs/04-atomic-stories.md)).
+
+## Status (v1 backlog)
+
+| Epic | Name | Surface |
+|------|------|---------|
+| **E0** | Platform foundations | Multi-tenant RLS, auth, uploads, audit, session ingest |
+| **E1** | Tenant & account setup | Sign-up, OTP, invites, company settings |
+| **E2** | Projects & sites | Sites, geofences, engineer assignment, nearest site |
+| **E3** | Worker enrollment | Profiles, consent, face enrollment, CSV import |
+| **E4** | Attendance capture | Mobile time-in/out, photos, recognition banding, tags |
+| **E5** | Offline & sync | Encrypted queue, auto-sync, conflict rules, clock drift |
+| **E6** | Day records & corrections | Day recompute, admin edit, engineer corrections |
+| **E7** | Gross payroll | Runs, OT, adjustments, approve, CSV/PDF export |
+| **E8** | Dashboard & reports | Today view, exceptions queue, tagging, padding reports |
+| **E9** | Notifications | Push/SMS/email abstraction, reminders, digests |
+
+**Not in v1 backlog yet:** SaaS **billing** (how Presente charges contractors — pricing still open). Gross payroll is *worker pay computation*, not product billing. Money movement and statutory deductions remain out of scope.
 
 ## Monorepo layout
 
 | Path | Package | Stack |
-|---|---|---|
+|------|---------|--------|
 | `apps/api` | `@presente/api` | NestJS + PostgreSQL (row-level security), raw SQL migrations |
 | `apps/web` | `@presente/web` | React + Vite dashboard SPA |
 | `apps/mobile` | `@presente/mobile` | Expo / React Native (dev-client workflow) |
@@ -16,7 +33,7 @@ Product docs live in [docs/](docs/) — product brief, PRD, user flows, and the 
 
 - Node.js ≥ 22, pnpm ≥ 8
 - PostgreSQL ≥ 14 running locally (`brew services start postgresql@14`)
-- For mobile on-device work only: Android Studio (or EAS Build)
+- For mobile on-device work: Android Studio (or EAS Build)
 
 ## First-time setup
 
@@ -51,30 +68,39 @@ pnpm seed:dev                # owner@demo.ph / presente-dev-123
 Postgres must be running and `presente_test` migrated (steps above) — the API e2e suite talks to the real database because the thing under test is largely SQL (RLS policies, grants, idempotent upserts).
 
 ```sh
-# Everything unit-level across the workspace (API unit + web):
+# Unit-level across the workspace (API unit + web):
 pnpm test
 
-# API unit tests (guards, pure logic):
+# API unit tests (guards, pure logic — banding, payroll compute, …):
 pnpm --filter @presente/api test
 
-# API e2e tests (auth, RLS isolation, session ingest, uploads, audit log):
+# API e2e (real Postgres):
 pnpm --filter @presente/api test:e2e
 
-# Web unit tests (JWT decode/expiry logic):
+# Web unit tests (JWT decode/expiry):
 pnpm --filter @presente/web test
 
-# Mobile: no test runner yet — typecheck + Android bundle build are the checks:
+# Mobile: typecheck is the automated check (no Jest suite yet):
 pnpm --filter @presente/mobile typecheck
-cd apps/mobile && pnpm exec expo export --platform android --output-dir /tmp/presente-export
 ```
 
-What the e2e suites prove, per story:
+### API e2e suites (by area)
 
-- `test/rls.e2e-spec.ts` — cross-tenant SELECT returns zero rows; cross-tenant INSERT rejected (E0-S01)
-- `test/auth.e2e-spec.ts` — login issues JWT with role/tenant claims; identical generic 401 for wrong password, unknown email, and disabled accounts (E0-S02)
-- `src/auth/roles.guard.spec.ts` — one allowed + one denied route per role (E0-S03)
-- `test/uploads.e2e-spec.ts` — presigned PUT URLs under `tenants/<id>/…`, content types whitelisted (E0-S04)
-- `test/sessions.e2e-spec.ts` — retrying `PUT /sessions/{uuid}` returns a byte-identical response and writes exactly one audit entry; audit rows can't be updated or deleted; clock drift computed from device-sent time (E0-S05, S06, S10)
+| Suite | Covers |
+|-------|--------|
+| `test/rls.e2e-spec.ts` | Tenant isolation (E0-S01) |
+| `test/auth.e2e-spec.ts` | Login / JWT claims (E0-S02) |
+| `test/uploads.e2e-spec.ts` | Signed uploads (E0-S04) |
+| `test/sessions.e2e-spec.ts` | Idempotent ingest, audit, clock drift (E0-S05/S06/S10) |
+| `test/signup.e2e-spec.ts` / `invites` / `settings` | Tenant onboarding (E1) |
+| `test/sites.e2e-spec.ts` | Sites, assignment, geofence (E2) |
+| `test/workers.e2e-spec.ts` / `enrollment.e2e-spec.ts` | Workers & biometrics (E3) |
+| `test/capture.e2e-spec.ts` | Recognition, tags, reconciliation (E4) |
+| `test/sync.e2e-spec.ts` | Drift, admin-wins conflict, recognition reconcile (E5) |
+| `test/day-records.e2e-spec.ts` | Day records, corrections, no-biometric (E6) |
+| `test/payroll.e2e-spec.ts` | Runs, OT, approve, export (E7) |
+| `test/dashboard.e2e-spec.ts` | Today, exceptions, admin tag, reports (E8) |
+| `test/notifications.e2e-spec.ts` | Devices, reminders, digests (E9) |
 
 ## Running the apps
 
@@ -83,24 +109,23 @@ pnpm dev:api    # NestJS on http://localhost:3000
 pnpm dev:web    # dashboard on http://localhost:5173
 ```
 
-Log in to the dashboard with the seeded `owner@demo.ph` / `presente-dev-123`.
+Log in with the seeded **`owner@demo.ph` / `presente-dev-123`**.
 
-Manual API smoke test:
+### Web dashboard routes
 
-```sh
-TOKEN=$(curl -s http://localhost:3000/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"owner@demo.ph","password":"presente-dev-123"}' | jq -r .accessToken)
+| Path | Purpose |
+|------|---------|
+| `/` | Today — site headcount, photo feed, device sync |
+| `/exceptions` | Exception queue + typed resolvers |
+| `/sessions/:id` | Admin photo tagging workspace |
+| `/attendance` | Day records, admin edits, correction review |
+| `/payroll` | Payroll runs, matrix, approve, export |
+| `/reports` | Attendance/OT/exception reports, padding indicators |
+| `/sites`, `/workers`, `/settings` | Setup |
 
-curl -s http://localhost:3000/health          # public
-curl -s http://localhost:3000/uploads/sign \  # authenticated
-  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"category":"session-photo","contentType":"image/jpeg"}' | jq
-```
+### Mobile (engineer)
 
-### Mobile
-
-SQLCipher and (later) the camera frame processors don't run in Expo Go — a dev build is required:
+SQLCipher, camera, and push registration need a **dev build** (not Expo Go):
 
 ```sh
 cd apps/mobile
@@ -108,22 +133,61 @@ pnpm exec expo prebuild
 pnpm exec expo run:android     # needs Android Studio / an emulator
 ```
 
-On the Android emulator the API is reachable at `http://10.0.2.2:3000` (the default). On a physical phone, point the app at your machine's LAN address:
+| Flow | Screens |
+|------|---------|
+| Auth | Login (token in SecureStore) |
+| Enrollment | Consent → profile → face poses |
+| Capture | Site select → camera → tag → summary |
+| Sync | Offline queue, sync pill, background/network drain |
+| Corrections | Request correction; see approve/reject |
+| Push | Expo token registered on login (E9) |
+
+On the Android emulator the API is `http://10.0.2.2:3000` (default). On a physical phone:
 
 ```sh
 EXPO_PUBLIC_API_URL=http://<your-lan-ip>:3000 pnpm exec expo start --dev-client
 ```
 
+### API smoke test
+
+```sh
+TOKEN=$(curl -s http://localhost:3000/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"owner@demo.ph","password":"presente-dev-123"}' | jq -r .accessToken)
+
+curl -s http://localhost:3000/health
+curl -s http://localhost:3000/dashboard/today \
+  -H "Authorization: Bearer $TOKEN" | jq
+```
+
 ## Migrations
 
-Raw SQL files in `apps/api/migrations`, run by node-pg-migrate as the table owner:
+Raw SQL in `apps/api/migrations`, applied by node-pg-migrate as the table owner:
 
 ```sh
 cd apps/api
 ./scripts/migrate.sh create my-change    # new timestamped .sql file
-./scripts/migrate.sh up                  # apply to presente_dev
-pnpm migrate:test                        # apply to presente_test
+./scripts/migrate.sh up                  # presente_dev
+pnpm migrate:test                        # presente_test
 ./scripts/migrate.sh down                # roll back one
 ```
 
-Every table carrying tenant data gets `ENABLE ROW LEVEL SECURITY`, a `tenant_isolation` policy keyed to `current_setting('app.tenant_id')`, and explicit grants to `presente_app` — see `1752200000001_tenants-and-users.sql` for the pattern.
+| Migration | Epic |
+|-----------|------|
+| `…0001`–`…0004` | E0 tenants, auth, audit, sessions |
+| `…signup` / settings / invites | E1 |
+| `…sites` | E2 |
+| `…workers-consents-enrollment` | E3 |
+| `…attendance-capture` | E4 |
+| `…offline-sync` | E5 |
+| `…day-records` | E6 |
+| `…payroll` | E7 |
+| `…notifications` | E9 |
+
+Every tenant-scoped table gets `ENABLE ROW LEVEL SECURITY`, a `tenant_isolation` policy on `current_setting('app.tenant_id')`, and grants to `presente_app` — see `1752200000001_tenants-and-users.sql`.
+
+## Package READMEs
+
+- [apps/api/README.md](apps/api/README.md) — NestJS API
+- [apps/web/README.md](apps/web/README.md) — dashboard SPA
+- [apps/mobile/README.md](apps/mobile/README.md) — Expo field app

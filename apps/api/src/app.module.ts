@@ -15,6 +15,7 @@ import { SitesModule } from './sites/sites.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { DayRecordsModule } from './day-records/day-records.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { WorkersModule } from './workers/workers.module';
 
@@ -36,6 +37,7 @@ import { WorkersModule } from './workers/workers.module';
     DayRecordsModule,
     PayrollModule,
     DashboardModule,
+    NotificationsModule,
   ],
   controllers: [AppController, AppConfigController],
 })
