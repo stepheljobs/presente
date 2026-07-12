@@ -7,3 +7,5 @@ coverage/
 .DS_Store
 .expo/
 *.hbc
+# API runtime access logs (and future local storage)
+apps/api/storage/

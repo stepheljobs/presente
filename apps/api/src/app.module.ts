@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { RequestLoggingMiddleware } from './common/request-logging.middleware';
 import { AppConfigController } from './config/app-config.controller';
 import { DatabaseModule } from './database/database.module';
 import { InvitesModule } from './invites/invites.module';
@@ -41,4 +42,8 @@ import { WorkersModule } from './workers/workers.module';
   ],
   controllers: [AppController, AppConfigController],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(RequestLoggingMiddleware).forRoutes('*');
+  }
+}
