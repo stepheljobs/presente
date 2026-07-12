@@ -100,6 +100,104 @@
 }
 
 .page-pad {
+  padding-bottom: 3rem;
+}
+
+.toolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.2rem;
+  flex-wrap: wrap;
+}
+
+.card-block {
+  margin: 0 1.2rem 1.5rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.5rem 0.4rem;
+  border-bottom: 1px solid #eee;
+}
+
+.data-table tr.clickable {
+  cursor: pointer;
+}
+
+.data-table tr.clickable:hover {
+  background: #f0fdf4;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 24rem;
+  margin-top: 1rem;
+}
+
+.edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.edit-form input,
+.edit-form select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #bbb;
+  border-radius: 5px;
+}
+
+.edit-form button,
+.toolbar button,
+.row-actions button {
+  padding: 0.45rem 0.8rem;
+  border: none;
+  border-radius: 5px;
+  background: #14532d;
+  color: #fff;
+  cursor: pointer;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.row-actions button.danger {
+  background: #991b1b;
+}
+
+.muted {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.page-pad {
   padding: 1.2rem;
   max-width: 34rem;
 }

@@ -59,17 +59,25 @@ export default function AttendanceScreen() {
         </Pressable>
       </View>
 
-      <Pressable
-        style={styles.syncBtn}
-        onPress={async () => {
-          await syncNow();
-          await refresh();
-        }}
-      >
-        <Text style={styles.syncBtnText}>
-          {pill.kind === 'uploading' ? 'Syncing…' : 'Sync now'}
-        </Text>
-      </Pressable>
+      <View style={styles.row}>
+        <Pressable
+          style={[styles.syncBtn, { flex: 1 }]}
+          onPress={async () => {
+            await syncNow();
+            await refresh();
+          }}
+        >
+          <Text style={styles.syncBtnText}>
+            {pill.kind === 'uploading' ? 'Syncing…' : 'Sync now'}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.syncBtn, { flex: 1 }]}
+          onPress={() => router.push('/corrections')}
+        >
+          <Text style={styles.syncBtnText}>Corrections</Text>
+        </Pressable>
+      </View>
 
       <FlatList
         data={sessions}

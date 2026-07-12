@@ -13,6 +13,7 @@ import { RecognitionModule } from './recognition/provider';
 import { SettingsModule } from './settings/settings.module';
 import { SitesModule } from './sites/sites.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { DayRecordsModule } from './day-records/day-records.module';
 import { WorkersModule } from './workers/workers.module';
 
 @Module({
@@ -30,6 +31,7 @@ import { WorkersModule } from './workers/workers.module';
     RecognitionModule,
     WorkersModule,
     UploadsModule,
+    DayRecordsModule,
   ],
   controllers: [AppController, AppConfigController],
 })

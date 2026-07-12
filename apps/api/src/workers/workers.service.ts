@@ -18,6 +18,8 @@ export interface WorkerInput {
   phone?: string;
   govId?: string;
   startDate?: string;
+  /** E6-S08: consent declined — manual attendance path. */
+  noBiometricConsent?: boolean;
 }
 
 interface WorkerRow {
@@ -33,6 +35,7 @@ interface WorkerRow {
   end_date: string | null;
   status: 'active' | 'pending_approval' | 'deactivated';
   biometric_status: 'none' | 'pending' | 'enrolled';
+  no_biometric_consent: boolean;
   retention_until: Date | null;
   site_ids?: string[];
 }
@@ -60,12 +63,12 @@ export class WorkersService {
       const result = await client.query<{ id: string }>(
         `INSERT INTO workers
            (tenant_id, full_name, nickname, photo_key, position, daily_rate,
-            phone, gov_id_enc, start_date, status, created_by)
+            phone, gov_id_enc, start_date, status, created_by, no_biometric_consent)
          VALUES (NULLIF(current_setting('app.tenant_id', true), '')::uuid,
                  $1, $2, $3, $4, $5, $6,
                  CASE WHEN $7::text IS NULL THEN NULL
                       ELSE pgp_sym_encrypt($7::text, $8, 'cipher-algo=aes256') END,
-                 $9, $10, $11)
+                 $9, $10, $11, $12)
          RETURNING id`,
         [
           input.fullName,
@@ -79,6 +82,7 @@ export class WorkersService {
           input.startDate ?? null,
           engineerInitiated ? 'pending_approval' : 'active',
           actor.sub,
+          input.noBiometricConsent ?? false,
         ],
       );
       const id = result.rows[0].id;
@@ -325,6 +329,7 @@ export class WorkersService {
       endDate: row.end_date,
       status: row.status,
       biometricStatus: row.biometric_status,
+      noBiometricConsent: Boolean(row.no_biometric_consent),
       siteIds: row.site_ids ?? [],
       retentionUntil: row.retention_until?.toISOString() ?? null,
     };

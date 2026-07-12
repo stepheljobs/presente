@@ -9,6 +9,7 @@ import { PoolClient } from 'pg';
 import { AuditService } from '../audit/audit.service';
 import type { AuthUser } from '../auth/roles';
 import { DatabaseService } from '../database/database.service';
+import { DayRecordsService } from '../day-records/day-records.service';
 import { bandFor } from '../recognition/banding';
 import type { Band } from '../recognition/banding';
 import { RECOGNITION_PROVIDER } from '../recognition/provider';
@@ -35,6 +36,7 @@ export class CaptureService {
     private readonly audit: AuditService,
     @Inject(RECOGNITION_PROVIDER)
     private readonly recognition: RecognitionProvider,
+    private readonly dayRecords: DayRecordsService,
   ) {}
 
   /**
@@ -89,6 +91,10 @@ export class CaptureService {
     );
     if (meta.rows[0]?.type === 'time_out') {
       await this.sweepExceptions(actor.tenantId, meta.rows[0].day);
+    }
+    // E6-S01: recompute day records when a late session lands.
+    if (meta.rows[0]?.day) {
+      await this.dayRecords.recomputeDay(actor.tenantId, meta.rows[0].day);
     }
     return this.getSession(actor, sessionId).then((s) => ({
       photoIds,
