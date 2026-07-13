@@ -7,6 +7,7 @@ import type { ViewShotRef } from 'react-native-view-shot';
 import { apiFetch } from '../../lib/api';
 import { loadDraft, uploadArtifact } from '../../lib/enrollment';
 
+import { Screen } from '../../components/Screen';
 type Stroke = { x: number; y: number }[];
 
 /**
@@ -67,7 +68,7 @@ export default function SignatureScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container} edges={{ top: false, bottom: true }}>
       <Text style={styles.title}>Worker signature</Text>
       <ViewShot
         ref={shotRef}
@@ -114,7 +115,7 @@ export default function SignatureScreen() {
           </Text>
         </Pressable>
       </View>
-    </View>
+    </Screen>
   );
 }
 

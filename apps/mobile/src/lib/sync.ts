@@ -3,7 +3,6 @@ import * as Crypto from 'expo-crypto';
 import { File } from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Network from 'expo-network';
-import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import { AppState, type AppStateStatus } from 'react-native';
 import { apiFetch } from './api';
@@ -17,6 +16,10 @@ import {
   type ServerSession,
 } from './capture';
 import { getDb, kvGet, kvSet } from './db';
+import {
+  configureNotificationHandler,
+  scheduleLocalNotification,
+} from './notifications';
 
 /**
  * E5 offline & sync engine.
@@ -445,55 +448,33 @@ export async function runSyncPass(opts?: {
   return { synced, failed, attention };
 }
 
-/** E5-S09 */
+/** E5-S09 — local alerts only when notifications are enabled (production). */
 async function notifySyncResult(input: {
   synced: number;
   attention: number;
   attentionSessionId: string | null;
 }): Promise<void> {
-  try {
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') {
-      const req = await Notifications.requestPermissionsAsync();
-      if (req.status !== 'granted') return;
-    }
-    if (input.attention > 0) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Presente sync',
-          body: `${input.attention} session${input.attention === 1 ? '' : 's'} need attention`,
-          data: {
-            path: '/(tabs)/attendance',
-            sessionId: input.attentionSessionId,
-          },
-        },
-        trigger: null,
-      });
-    } else if (input.synced > 0) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Presente sync',
-          body: 'All sessions synced ✓',
-          data: { path: '/(tabs)/attendance' },
-        },
-        trigger: null,
-      });
-    }
-  } catch {
-    /* notifications optional on web / simulators */
+  if (input.attention > 0) {
+    await scheduleLocalNotification({
+      title: 'Presente sync',
+      body: `${input.attention} session${input.attention === 1 ? '' : 's'} need attention`,
+      data: {
+        path: '/(tabs)/attendance',
+        sessionId: input.attentionSessionId,
+      },
+    });
+  } else if (input.synced > 0) {
+    await scheduleLocalNotification({
+      title: 'Presente sync',
+      body: 'All sessions synced ✓',
+      data: { path: '/(tabs)/attendance' },
+    });
   }
 }
 
 /** E5-S03: foreground network + app-state listeners; background fetch task. */
 export async function startSyncEngine(): Promise<void> {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-  });
+  void configureNotificationHandler();
 
   await refreshSyncPill();
   void runSyncPass({ notify: false });

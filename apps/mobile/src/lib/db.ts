@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
-import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
+import * as SecureStore from './secure-store';
 
 const DB_KEY_STORE = 'presente.dbKey';
 

@@ -8,15 +8,17 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Screen } from '../../components/Screen';
 import { apiFetch } from '../../lib/api';
 import type { WorkerDto } from '../../lib/capture';
 import { fetchRoster } from '../../lib/capture';
-
 /**
  * E6-S05: engineer correction request — proposed change + reason.
  * Queues via API when online; caller can retry when offline later.
  */
 export default function NewCorrectionScreen() {
+  const insets = useSafeAreaInsets();
   const [workers, setWorkers] = useState<WorkerDto[]>([]);
   const [workerId, setWorkerId] = useState<string | null>(null);
   const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10));
@@ -74,18 +76,24 @@ export default function NewCorrectionScreen() {
 
   if (done && !error) {
     return (
-      <View style={styles.center}>
+      <Screen style={styles.center} edges={{ top: false, bottom: true }}>
         <Text style={styles.title}>Submitted ✓</Text>
         <Text style={styles.meta}>Admin will review your request.</Text>
         <Pressable style={styles.btn} onPress={() => router.back()}>
           <Text style={styles.btnText}>Back</Text>
         </Pressable>
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        { paddingBottom: Math.max(insets.bottom, 12) + 16 },
+      ]}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.title}>Request correction</Text>
       <Text style={styles.label}>Day (YYYY-MM-DD)</Text>
       <TextInput style={styles.input} value={day} onChangeText={setDay} />

@@ -20,6 +20,7 @@ import {
   type SiteDto,
 } from '../../lib/capture';
 
+import { Screen } from '../../components/Screen';
 /**
  * E4-S01 + S02: site select with GPS pre-selection, then create the local
  * session shell (type, site, engineer device, GPS flags).
@@ -97,15 +98,15 @@ export default function SiteSelectScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <Screen style={styles.center} edges={{ top: false, bottom: true }}>
         <ActivityIndicator size="large" color="#14532d" />
         <Text style={styles.hint}>Finding nearest site…</Text>
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container} edges={{ top: false, bottom: true }}>
       <Text style={styles.heading}>
         {sessionType === 'time_in' ? 'Time In' : 'Time Out'}
       </Text>
@@ -170,7 +171,7 @@ export default function SiteSelectScreen() {
           {busy ? 'Starting…' : 'Confirm site'}
         </Text>
       </Pressable>
-    </View>
+    </Screen>
   );
 }
 

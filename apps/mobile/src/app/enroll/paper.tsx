@@ -5,6 +5,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
 import { loadDraft, uploadArtifact } from '../../lib/enrollment';
 
+import { Screen } from '../../components/Screen';
 /**
  * E3-S05: photograph the signed/thumbprinted paper consent form.
  * Lands the worker in the same state as an on-screen signature.
@@ -18,12 +19,12 @@ export default function PaperConsentScreen() {
 
   if (!permission?.granted) {
     return (
-      <View style={styles.center}>
+      <Screen style={styles.center} edges={{ top: false, bottom: true }}>
         <Text>Camera access is needed to photograph the form.</Text>
         <Pressable style={styles.button} onPress={requestPermission}>
           <Text style={styles.buttonText}>Allow camera</Text>
         </Pressable>
-      </View>
+      </Screen>
     );
   }
 
@@ -60,7 +61,7 @@ export default function PaperConsentScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container} edges={{ top: false, bottom: true }}>
       {photoUri ? (
         <>
           <Image source={{ uri: photoUri }} style={styles.preview} />
@@ -94,7 +95,7 @@ export default function PaperConsentScreen() {
           </Pressable>
         </>
       )}
-    </View>
+    </Screen>
   );
 }
 

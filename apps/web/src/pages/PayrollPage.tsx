@@ -47,25 +47,70 @@ interface RunDetail extends RunSummary {
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
+const MAX_PERIOD_DAYS = 62;
+
+function daySpan(start: string, end: string): number {
+  const a = Date.parse(`${start}T00:00:00Z`);
+  const b = Date.parse(`${end}T00:00:00Z`);
+  if (Number.isNaN(a) || Number.isNaN(b)) return 0;
+  return Math.floor((b - a) / 86_400_000) + 1;
+}
+
+/** Fallback when Content-Disposition is hidden: name-YYYY-MM-DD-HHmmss.pdf */
+function clientPayslipFilename(workerName: string, when = new Date()): string {
+  const name =
+    workerName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || 'worker';
+  const y = when.getFullYear();
+  const mo = String(when.getMonth() + 1).padStart(2, '0');
+  const d = String(when.getDate()).padStart(2, '0');
+  const h = String(when.getHours()).padStart(2, '0');
+  const mi = String(when.getMinutes()).padStart(2, '0');
+  const s = String(when.getSeconds()).padStart(2, '0');
+  return `${name}-${y}-${mo}-${d}-${h}${mi}${s}.pdf`;
+}
+
 /** E7-S06–S11: payroll workspace — list, start, grid, review, approve, export. */
 export default function PayrollPage() {
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [active, setActive] = useState<RunDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [periodStart, setPeriodStart] = useState('');
+  const [periodEnd, setPeriodEnd] = useState('');
+  const [suggested, setSuggested] = useState<{ start: string; end: string } | null>(
+    null,
+  );
   const [adjWorker, setAdjWorker] = useState('');
   const [adjAmount, setAdjAmount] = useState('-200');
   const [adjNote, setAdjNote] = useState('');
+  const [starting, setStarting] = useState(false);
 
   const loadRuns = useCallback(async () => {
     setRuns(await apiFetch<RunSummary[]>('/payroll/runs'));
   }, []);
 
-  useEffect(() => {
-    void loadRuns().catch((e) =>
-      setError(e instanceof Error ? e.message : 'Failed to load'),
+  const loadSuggestedPeriod = useCallback(async () => {
+    const period = await apiFetch<{ start: string; end: string }>(
+      '/payroll/suggest-period',
     );
-  }, [loadRuns]);
+    setSuggested(period);
+    setPeriodStart(period.start);
+    setPeriodEnd(period.end);
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        await Promise.all([loadRuns(), loadSuggestedPeriod()]);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load');
+      }
+    })();
+  }, [loadRuns, loadSuggestedPeriod]);
 
   async function openRun(id: string) {
     setError(null);
@@ -75,19 +120,32 @@ export default function PayrollPage() {
   async function startRun() {
     setError(null);
     setNotice(null);
+    if (!periodStart || !periodEnd) {
+      setError('Choose both period start and end dates');
+      return;
+    }
+    if (periodStart > periodEnd) {
+      setError('Period start must be on or before period end');
+      return;
+    }
+    const span = daySpan(periodStart, periodEnd);
+    if (span > MAX_PERIOD_DAYS) {
+      setError(`Period is too long (${span} days). Max is ${MAX_PERIOD_DAYS} days.`);
+      return;
+    }
+    setStarting(true);
     try {
-      const period = await apiFetch<{ start: string; end: string }>(
-        '/payroll/suggest-period',
-      );
       const run = await apiFetch<RunDetail>('/payroll/runs', {
         method: 'POST',
-        body: period,
+        body: { start: periodStart, end: periodEnd },
       });
-      setNotice(`Started run ${period.start} – ${period.end}`);
+      setNotice(`Started run ${periodStart} – ${periodEnd}`);
       await loadRuns();
       setActive(run);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Start failed');
+    } finally {
+      setStarting(false);
     }
   }
 
@@ -139,27 +197,50 @@ export default function PayrollPage() {
     await openRun(active!.id);
   }
 
-  async function download(format: string) {
+  async function download(
+    format: string,
+    workerId?: string,
+    workerName?: string,
+  ) {
     if (!active) return;
+    setError(null);
+    const q = new URLSearchParams({ format });
+    if (workerId) q.set('workerId', workerId);
     const res = await fetch(
-      `${API_URL}/payroll/runs/${active.id}/export?format=${format}`,
+      `${API_URL}/payroll/runs/${active.id}/export?${q}`,
       { headers: { Authorization: `Bearer ${accessToken() ?? ''}` } },
     );
     if (!res.ok) {
-      setError(`Export failed (${res.status})`);
+      const errBody = (await res.json().catch(() => null)) as {
+        message?: string | string[];
+      } | null;
+      const msg = Array.isArray(errBody?.message)
+        ? errBody?.message[0]
+        : errBody?.message;
+      setError(msg ?? `Export failed (${res.status})`);
       return;
     }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
+    const headerName = res.headers
+      .get('Content-Disposition')
+      ?.match(/filename="([^"]+)"/)?.[1];
     a.download =
-      res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ??
-      `export.${format}`;
+      headerName ??
+      (format === 'payslip'
+        ? clientPayslipFilename(workerName ?? 'worker')
+        : `payroll-${active.periodStart}.${format === 'xlsx' ? 'xml' : format === 'csv' ? 'csv' : 'pdf'}`);
     a.click();
     URL.revokeObjectURL(url);
-    setNotice(`Exported ${format}`);
-    await openRun(active.id);
+    setNotice(
+      format === 'payslip' ? 'Payslip downloaded' : `Exported ${format}`,
+    );
+    // Bulk exports may flip run to exported; refresh. Single payslip does not.
+    if (format !== 'payslip') {
+      await openRun(active.id);
+    }
   }
 
   const matrix = useMemo(() => {
@@ -200,10 +281,57 @@ export default function PayrollPage() {
       {error && <Alert tone="error">{error}</Alert>}
       {notice && <Alert tone="success">{notice}</Alert>}
 
-      <section className="toolbar">
-        <button type="button" onClick={() => void startRun()}>
-          Start run (last payroll week)
+      <section className="toolbar payroll-period-toolbar">
+        <label className="field">
+          From
+          <input
+            type="date"
+            value={periodStart}
+            onChange={(e) => setPeriodStart(e.target.value)}
+          />
+        </label>
+        <label className="field">
+          To
+          <input
+            type="date"
+            value={periodEnd}
+            min={periodStart || undefined}
+            onChange={(e) => setPeriodEnd(e.target.value)}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => void startRun()}
+          disabled={starting || !periodStart || !periodEnd}
+        >
+          {starting ? 'Starting…' : 'Start run'}
         </button>
+        <button
+          type="button"
+          className="secondary"
+          disabled={!suggested}
+          onClick={() => {
+            if (!suggested) return;
+            setPeriodStart(suggested.start);
+            setPeriodEnd(suggested.end);
+            setNotice(
+              `Filled suggested week ${suggested.start} – ${suggested.end}`,
+            );
+          }}
+        >
+          Use suggested week
+        </button>
+        {periodStart && periodEnd && periodStart <= periodEnd && (
+          <span className="muted payroll-period-hint">
+            {daySpan(periodStart, periodEnd)} day
+            {daySpan(periodStart, periodEnd) === 1 ? '' : 's'}
+            {suggested &&
+            periodStart === suggested.start &&
+            periodEnd === suggested.end
+              ? ' · last completed payroll week'
+              : ''}
+          </span>
+        )}
       </section>
 
       <Card title="Runs" description="Select a payroll period to review, approve, or export.">
@@ -318,11 +446,12 @@ export default function PayrollPage() {
                       <th key={d}>{d.slice(5)}</th>
                     ))}
                     <th>Gross</th>
+                    <th>Payslip</th>
                   </tr>
                 </thead>
                 <tbody>
                   {matrix.rows.map((r) => (
-                    <tr key={r.name}>
+                    <tr key={r.workerId}>
                       <td>
                         <Link to={`/attendance`}>{r.name}</Link>
                       </td>
@@ -332,6 +461,18 @@ export default function PayrollPage() {
                         </td>
                       ))}
                       <td>₱{r.gross.toLocaleString()}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="secondary"
+                          title="Download printable gross payslip PDF"
+                          onClick={() =>
+                            void download('payslip', r.workerId, r.name)
+                          }
+                        >
+                          PDF
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

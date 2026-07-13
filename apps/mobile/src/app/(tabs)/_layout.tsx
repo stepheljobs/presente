@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 import type { ColorValue } from 'react-native';
-import { SyncPill } from '../../components/SyncPill';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function tabIcon(glyph: string) {
   return function TabIcon({ color }: { color: ColorValue }) {
@@ -10,25 +10,34 @@ function tabIcon(glyph: string) {
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  // Only pad the tab bar for the system nav. Do NOT pad the top of this
+  // wrapper — React Navigation already insets the stack/tab headers.
+  const tabPad = Math.max(insets.bottom, 4);
+
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ paddingTop: 4 }}>
-        <SyncPill />
-      </View>
-      <Tabs screenOptions={{ tabBarActiveTintColor: '#14532d' }}>
-        <Tabs.Screen
-          name="index"
-          options={{ title: 'Home', tabBarIcon: tabIcon('⌂') }}
-        />
-        <Tabs.Screen
-          name="workers"
-          options={{ title: 'Workers', tabBarIcon: tabIcon('👷') }}
-        />
-        <Tabs.Screen
-          name="attendance"
-          options={{ title: 'Attendance', tabBarIcon: tabIcon('📸') }}
-        />
-      </Tabs>
-    </View>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: '#14532d',
+        tabBarStyle: {
+          paddingBottom: tabPad,
+          height: 49 + tabPad,
+        },
+        headerStatusBarHeight: insets.top,
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{ title: 'Home', tabBarIcon: tabIcon('⌂') }}
+      />
+      <Tabs.Screen
+        name="workers"
+        options={{ title: 'Workers', tabBarIcon: tabIcon('👷') }}
+      />
+      <Tabs.Screen
+        name="attendance"
+        options={{ title: 'Attendance', tabBarIcon: tabIcon('📸') }}
+      />
+    </Tabs>
   );
 }

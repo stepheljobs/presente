@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "migrate": "./scripts/migrate.sh",
     "migrate:test": "MIGRATION_DATABASE_URL=postgres://localhost:5432/presente_test ./scripts/migrate.sh up",
-    "seed:dev": "node scripts/seed-dev.js"
+    "seed:dev": "node scripts/seed-dev.js",
+    "seed:attendance": "node scripts/seed-attendance.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1084.0",

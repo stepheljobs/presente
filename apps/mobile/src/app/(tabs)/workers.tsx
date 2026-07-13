@@ -16,6 +16,7 @@ interface Worker {
   position: string | null;
   status: string;
   biometricStatus: string;
+  siteIds?: string[];
 }
 
 export default function WorkersScreen() {
@@ -52,6 +53,10 @@ export default function WorkersScreen() {
       >
         <Text style={styles.enrollText}>+ Enroll worker</Text>
       </Pressable>
+      <Text style={styles.hint}>
+        Tap a worker to assign sites. Capture tagging only lists people on that
+        site’s roster.
+      </Text>
       {error && <Text style={styles.error}>{error}</Text>}
       <FlatList
         data={workers}
@@ -64,19 +69,33 @@ export default function WorkersScreen() {
             No workers yet — enroll the first one.
           </Text>
         }
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <View>
-              <Text style={styles.name}>{item.fullName}</Text>
-              <Text style={styles.meta}>
-                {item.position ?? '—'} · face: {item.biometricStatus}
-              </Text>
-            </View>
-            {item.status === 'pending_approval' && (
-              <Text style={styles.pending}>awaiting approval</Text>
-            )}
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const n = item.siteIds?.length ?? 0;
+          return (
+            <Pressable
+              style={styles.row}
+              onPress={() =>
+                router.push({
+                  pathname: '/workers/[id]',
+                  params: { id: item.id },
+                })
+              }
+            >
+              <View style={styles.rowMain}>
+                <Text style={styles.name}>{item.fullName}</Text>
+                <Text style={styles.meta}>
+                  {item.position ?? '—'} · face: {item.biometricStatus}
+                  {` · ${n} site${n === 1 ? '' : 's'}`}
+                </Text>
+              </View>
+              {item.status === 'pending_approval' ? (
+                <Text style={styles.pending}>awaiting approval</Text>
+              ) : (
+                <Text style={styles.chevron}>Assign</Text>
+              )}
+            </Pressable>
+          );
+        }}
       />
     </View>
   );
@@ -91,17 +110,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   enrollText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  hint: { color: '#666', fontSize: 13, lineHeight: 18 },
   error: { color: '#b91c1c' },
   empty: { color: '#666', textAlign: 'center', marginTop: 32 },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#ddd',
+    gap: 10,
   },
+  rowMain: { flex: 1, gap: 2 },
   name: { fontSize: 16, fontWeight: '600' },
   meta: { color: '#666', fontSize: 13 },
   pending: { color: '#946200', fontSize: 12, fontWeight: '600' },
+  chevron: { color: '#14532d', fontWeight: '700', fontSize: 13 },
 });

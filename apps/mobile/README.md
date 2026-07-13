@@ -2,7 +2,11 @@
 
 Expo / React Native field app for site engineers (attendance capture, enrollment, offline sync).
 
-Requires a **dev build** — SQLCipher, camera, and reliable push do not run fully in Expo Go. See the [root README](../../README.md#mobile-engineer).
+Requires a **dev build** for SQLCipher, camera, and full offline — Expo Go is limited.
+
+**Push / `expo-notifications`:** disabled in Expo Go and Metro dev. The real package throws on import in Expo Go (SDK 53+ Android), so `metro.config.js` stubs it unless `NODE_ENV=production` or `EXPO_PUBLIC_ENABLE_PUSH=true`. After changing this, restart Metro with cache clear: `pnpm exec expo start -c`.
+
+See the [root README](../../README.md#mobile-engineer).
 
 ## Local dev
 
@@ -30,7 +34,7 @@ pnpm exec expo run:android
 | **Capture (E4)** | Time in/out, site GPS default, multi-photo, tag/visitor, summary |
 | **Sync (E5)** | Encrypted SQLite queue, compress/upload, sync pill, backoff |
 | **Corrections (E6)** | Request correction; see decisions |
-| **Push (E9)** | Expo push token registered on login |
+| **Push (E9)** | Expo push token registered on login (**production only**; off in `__DEV__` / Expo Go) |
 
 ## Scripts
 

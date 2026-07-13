@@ -1,5 +1,5 @@
-import * as SecureStore from 'expo-secure-store';
 import { decodeJwt, isExpired, Role } from './jwt';
+import * as SecureStore from './secure-store';
 
 // Android emulator reaches the host machine at 10.0.2.2, not localhost —
 // set EXPO_PUBLIC_API_URL accordingly when testing on-device.

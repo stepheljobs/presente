@@ -254,6 +254,44 @@ describe('E3-S01/S10/S11 + E2-S04 workers, approval, rosters, deactivation', () 
     expect(roster.rows[0].n).toBe(0);
   });
 
+  it('engineer can manage roster only on assigned sites', async () => {
+    const workers = await authed(
+      'get',
+      '/workers?pageSize=500',
+      adminToken,
+    ).expect(200);
+    const ramon = workers.body.items.find(
+      (w: { fullName: string }) => w.fullName === 'Ramon Torres',
+    );
+    const engId = (
+      await owner.query(`SELECT id FROM users WHERE email = 'eng@alpha.ph'`)
+    ).rows[0].id;
+
+    // Not assigned → 403
+    await authed(
+      'post',
+      `/sites/${siteId}/workers/${ramon.id}`,
+      engineerToken,
+    ).expect(403);
+
+    await owner.query(
+      `INSERT INTO site_engineers (tenant_id, site_id, user_id)
+       VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+      [tenantId, siteId, engId],
+    );
+
+    await authed(
+      'post',
+      `/sites/${siteId}/workers/${ramon.id}`,
+      engineerToken,
+    ).expect(201);
+    await authed(
+      'delete',
+      `/sites/${siteId}/workers/${ramon.id}`,
+      engineerToken,
+    ).expect(200);
+  });
+
   it('engineer cannot update, approve, or deactivate workers', async () => {
     const workers = await authed(
       'get',

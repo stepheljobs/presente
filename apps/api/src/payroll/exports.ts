@@ -142,16 +142,37 @@ export function payslipPdf(
   line: ExportLine,
 ): Buffer {
   return toSimplePdf(`Payslip — ${workerName}`, [
+    `Worker: ${workerName}`,
     `Period: ${period}`,
+    '',
     `Daily rate: ${peso(line.dailyRate)}`,
     `Days present: ${line.daysPresent}`,
     `Halfdays: ${line.halfdays}`,
     `OT hours: ${line.otHours}`,
     `Adjustments: ${peso(line.adjustments)}`,
+    `--------------------------------`,
     `Gross pay: ${peso(line.gross)}`,
     '',
     'This is a gross-pay slip (no statutory deductions).',
+    'Print this PDF or open it and use your device print dialog.',
   ]);
+}
+
+/** Filename: name-YYYY-MM-DD-HHmmss.pdf */
+export function payslipDownloadName(workerName: string, when = new Date()): string {
+  const name =
+    workerName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || 'worker';
+  const y = when.getFullYear();
+  const mo = String(when.getMonth() + 1).padStart(2, '0');
+  const d = String(when.getDate()).padStart(2, '0');
+  const h = String(when.getHours()).padStart(2, '0');
+  const mi = String(when.getMinutes()).padStart(2, '0');
+  const s = String(when.getSeconds()).padStart(2, '0');
+  return `${name}-${y}-${mo}-${d}-${h}${mi}${s}.pdf`;
 }
 
 export function peso(n: number): string {

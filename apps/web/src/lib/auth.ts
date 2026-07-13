@@ -8,7 +8,7 @@ export interface SessionUser {
 }
 
 const TOKEN_KEY = 'presente.accessToken';
-const API_URL = import.meta.env.VITE_API_URL ?? 'https://api.vibepost.codes';
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 interface JwtClaims {
   sub: string;
