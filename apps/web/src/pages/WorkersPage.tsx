@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Alert, AppShell, Card } from '../components/ui';
 import { apiFetch } from '../lib/api';
+import { currentUser } from '../lib/auth';
 
 interface Worker {
   id: string;
@@ -9,8 +11,10 @@ interface Worker {
   position: string | null;
   phone: string | null;
   dailyRate: number | null;
+  startDate: string | null;
   status: 'active' | 'pending_approval' | 'deactivated';
   biometricStatus: 'none' | 'pending' | 'enrolled';
+  noBiometricConsent: boolean;
   endDate: string | null;
   retentionUntil: string | null;
 }
@@ -29,14 +33,72 @@ interface CsvResult {
   imported: number;
 }
 
+type Draft = {
+  id?: string;
+  fullName: string;
+  nickname: string;
+  position: string;
+  dailyRate: string;
+  phone: string;
+  startDate: string;
+  noBiometricConsent: boolean;
+};
+
 const PAGE_SIZE = 50;
 
+const EMPTY_DRAFT: Draft = {
+  fullName: '',
+  nickname: '',
+  position: '',
+  dailyRate: '',
+  phone: '',
+  startDate: '',
+  noBiometricConsent: false,
+};
+
+function workerToDraft(w: Worker): Draft {
+  return {
+    id: w.id,
+    fullName: w.fullName,
+    nickname: w.nickname ?? '',
+    position: w.position ?? '',
+    dailyRate: w.dailyRate !== null && w.dailyRate !== undefined ? String(w.dailyRate) : '',
+    phone: w.phone ?? '',
+    startDate: w.startDate ? w.startDate.slice(0, 10) : '',
+    noBiometricConsent: Boolean(w.noBiometricConsent),
+  };
+}
+
+/** Shape body for POST/PUT — omit empty optionals. */
+function draftToBody(draft: Draft, mode: 'create' | 'update') {
+  const body: Record<string, unknown> = {
+    fullName: draft.fullName.trim(),
+  };
+  if (draft.nickname.trim()) body.nickname = draft.nickname.trim();
+  if (draft.position.trim()) body.position = draft.position.trim();
+  if (draft.phone.trim()) body.phone = draft.phone.trim();
+  if (draft.startDate) body.startDate = draft.startDate;
+  if (draft.dailyRate !== '') {
+    const n = Number(draft.dailyRate);
+    if (!Number.isNaN(n) && n >= 0) body.dailyRate = n;
+  }
+  if (mode === 'create') {
+    body.noBiometricConsent = draft.noBiometricConsent;
+  }
+  return body;
+}
+
 export default function WorkersPage() {
+  const user = currentUser()!;
+  const canEdit = user.role === 'owner' || user.role === 'admin';
+
   const [data, setData] = useState<WorkerPage | null>(null);
   const [pending, setPending] = useState<Worker[]>([]);
   const [page, setPage] = useState(1);
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     const [all, pend] = await Promise.all([
@@ -65,10 +127,146 @@ export default function WorkersPage() {
     }
   };
 
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!draft) return;
+    setError(null);
+    setNotice(null);
+    setBusy(true);
+    try {
+      const mode = draft.id ? 'update' : 'create';
+      const body = draftToBody(draft, mode);
+      if (typeof body.fullName !== 'string' || body.fullName.length < 2) {
+        throw new Error('Full name must be at least 2 characters');
+      }
+      await apiFetch(draft.id ? `/workers/${draft.id}` : '/workers', {
+        method: draft.id ? 'PUT' : 'POST',
+        body,
+      });
+      setNotice(draft.id ? `${draft.fullName} updated` : `${draft.fullName} added`);
+      setDraft(null);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <AppShell active="workers" title="Workers" eyebrow="Roster and enrollment">
+    <AppShell
+      active="workers"
+      title="Workers"
+      eyebrow="Roster and enrollment"
+      actions={
+        canEdit && !draft ? (
+          <button type="button" onClick={() => setDraft({ ...EMPTY_DRAFT })}>
+            Add worker
+          </button>
+        ) : null
+      }
+    >
       {error && <Alert tone="error">{error}</Alert>}
-      {notice && <Alert tone="success">{notice}</Alert>}
+      {notice && !draft && <Alert tone="success">{notice}</Alert>}
+
+      {draft && canEdit && (
+        <form className="worker-form" onSubmit={(e) => void onSubmit(e)}>
+          <h3>{draft.id ? `Edit ${draft.fullName || 'worker'}` : 'New worker'}</h3>
+
+          <label className="field">
+            Full name *
+            <input
+              value={draft.fullName}
+              onChange={(e) => setDraft({ ...draft, fullName: e.target.value })}
+              minLength={2}
+              required
+              autoFocus
+            />
+          </label>
+
+          <label className="field">
+            Nickname
+            <input
+              value={draft.nickname}
+              onChange={(e) => setDraft({ ...draft, nickname: e.target.value })}
+              placeholder="Optional"
+            />
+          </label>
+
+          <label className="field">
+            Position / trade
+            <input
+              value={draft.position}
+              onChange={(e) => setDraft({ ...draft, position: e.target.value })}
+              placeholder="e.g. Mason, Carpenter"
+            />
+          </label>
+
+          <label className="field">
+            Daily rate ₱
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={draft.dailyRate}
+              onChange={(e) => setDraft({ ...draft, dailyRate: e.target.value })}
+              placeholder="0"
+            />
+          </label>
+
+          <label className="field">
+            Phone
+            <input
+              type="tel"
+              value={draft.phone}
+              onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
+              placeholder="+63…"
+            />
+          </label>
+
+          <label className="field">
+            Start date
+            <input
+              type="date"
+              value={draft.startDate}
+              onChange={(e) => setDraft({ ...draft, startDate: e.target.value })}
+            />
+          </label>
+
+          {!draft.id ? (
+            <label className="field checkbox-field">
+              <input
+                type="checkbox"
+                checked={draft.noBiometricConsent}
+                onChange={(e) =>
+                  setDraft({ ...draft, noBiometricConsent: e.target.checked })
+                }
+              />
+              <span>Manual attendance only (no face enrollment)</span>
+            </label>
+          ) : (
+            draft.noBiometricConsent && (
+              <p className="hint muted">
+                This worker is on the manual-attendance path (no biometrics).
+              </p>
+            )
+          )}
+
+          <div className="form-actions">
+            <button type="submit" disabled={busy}>
+              {busy ? 'Saving…' : draft.id ? 'Save changes' : 'Save worker'}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setDraft(null)}
+              disabled={busy}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
 
       {pending.length > 0 && (
         <section className="approval-section">
@@ -84,15 +282,28 @@ export default function WorkersPage() {
       <Card title={`All workers ${data ? `(${data.total})` : ''}`}>
         <ul className="worker-list">
           {data?.items.map((w) => (
-            <WorkerRow key={w.id} worker={w} onAction={act} />
+            <WorkerRow
+              key={w.id}
+              worker={w}
+              canEdit={canEdit}
+              onEdit={() => {
+                setError(null);
+                setNotice(null);
+                setDraft(workerToDraft(w));
+              }}
+              onAction={act}
+            />
           ))}
           {data && data.items.length === 0 && (
-            <li className="muted">No workers yet — add them via CSV import or the mobile app.</li>
+            <li className="muted">
+              No workers yet — use <strong>Add worker</strong> or import a CSV.
+            </li>
           )}
         </ul>
         {data && data.total > PAGE_SIZE && (
           <div className="pager">
             <button
+              type="button"
               className="secondary"
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
@@ -103,6 +314,7 @@ export default function WorkersPage() {
               Page {page} of {Math.ceil(data.total / PAGE_SIZE)}
             </span>
             <button
+              type="button"
               className="secondary"
               disabled={page >= Math.ceil(data.total / PAGE_SIZE)}
               onClick={() => setPage((p) => p + 1)}
@@ -133,8 +345,7 @@ function ApprovalCard({
         <strong>{worker.fullName}</strong>
         {worker.nickname && <span className="muted"> “{worker.nickname}”</span>}
         <div className="muted">
-          {worker.position ?? 'No position'} · face:{' '}
-          {worker.biometricStatus}
+          {worker.position ?? 'No position'} · face: {worker.biometricStatus}
         </div>
       </div>
       {!rejecting ? (
@@ -148,6 +359,7 @@ function ApprovalCard({
             className="rate-input"
           />
           <button
+            type="button"
             disabled={rate === '' || Number(rate) < 0}
             onClick={() =>
               onAction(
@@ -162,7 +374,11 @@ function ApprovalCard({
           >
             Approve
           </button>
-          <button className="secondary" onClick={() => setRejecting(true)}>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => setRejecting(true)}
+          >
             Reject…
           </button>
         </div>
@@ -174,6 +390,7 @@ function ApprovalCard({
             onChange={(e) => setNote(e.target.value)}
           />
           <button
+            type="button"
             className="danger"
             disabled={note.trim().length < 3}
             onClick={() =>
@@ -189,7 +406,11 @@ function ApprovalCard({
           >
             Confirm reject
           </button>
-          <button className="secondary" onClick={() => setRejecting(false)}>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => setRejecting(false)}
+          >
             Back
           </button>
         </div>
@@ -200,22 +421,32 @@ function ApprovalCard({
 
 function WorkerRow({
   worker,
+  canEdit,
+  onEdit,
   onAction,
 }: {
   worker: Worker;
+  canEdit: boolean;
+  onEdit: () => void;
   onAction: (fn: () => Promise<unknown>, done: string) => Promise<void>;
 }) {
-  const [confirming, setConfirming] = useState<'deactivate' | 'biometrics' | null>(null);
+  const [confirming, setConfirming] = useState<'deactivate' | 'biometrics' | null>(
+    null,
+  );
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
 
   return (
     <li className={worker.status === 'deactivated' ? 'archived' : ''}>
       <div>
         <strong>{worker.fullName}</strong>
+        {worker.nickname && <span className="muted"> “{worker.nickname}”</span>}
         <div className="muted">
           {worker.position ?? '—'}
-          {worker.dailyRate !== null && ` · ₱${worker.dailyRate}/day`}
+          {worker.dailyRate !== null &&
+            worker.dailyRate !== undefined &&
+            ` · ₱${worker.dailyRate}/day`}
           {` · face: ${worker.biometricStatus}`}
+          {worker.noBiometricConsent && ' · manual only'}
           {worker.status === 'deactivated' &&
             ` · ended ${worker.endDate}` +
               (worker.retentionUntil
@@ -231,6 +462,7 @@ function WorkerRow({
               onChange={(e) => setEndDate(e.target.value)}
             />
             <button
+              type="button"
               className="danger"
               onClick={() => {
                 setConfirming(null);
@@ -246,7 +478,11 @@ function WorkerRow({
             >
               Confirm deactivation
             </button>
-            <button className="secondary" onClick={() => setConfirming(null)}>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setConfirming(null)}
+            >
               Cancel
             </button>
           </div>
@@ -259,6 +495,7 @@ function WorkerRow({
               are kept. This cannot be undone.
             </span>
             <button
+              type="button"
               className="danger"
               onClick={() => {
                 setConfirming(null);
@@ -273,7 +510,11 @@ function WorkerRow({
             >
               Delete biometric data
             </button>
-            <button className="secondary" onClick={() => setConfirming(null)}>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setConfirming(null)}
+            >
               Cancel
             </button>
           </div>
@@ -281,16 +522,23 @@ function WorkerRow({
       </div>
       {worker.status !== 'pending_approval' && confirming === null && (
         <div className="row-actions">
-          {worker.status === 'active' && (
+          {canEdit && (
+            <button type="button" className="secondary" onClick={onEdit}>
+              Edit
+            </button>
+          )}
+          {canEdit && worker.status === 'active' && (
             <button
+              type="button"
               className="secondary"
               onClick={() => setConfirming('deactivate')}
             >
               Deactivate
             </button>
           )}
-          {worker.biometricStatus !== 'none' && (
+          {canEdit && worker.biometricStatus !== 'none' && (
             <button
+              type="button"
               className="secondary"
               onClick={() => setConfirming('biometrics')}
             >
@@ -386,7 +634,10 @@ function CsvImport({ onImported }: { onImported: () => void }) {
                 </ul>
               )}
               <button
-                disabled={busy || result.errors.length > 0 || result.valid === 0 || !csv}
+                type="button"
+                disabled={
+                  busy || result.errors.length > 0 || result.valid === 0 || !csv
+                }
                 onClick={() => void commit()}
               >
                 {result.errors.length > 0

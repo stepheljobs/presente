@@ -2,10 +2,10 @@ import * as Crypto from 'expo-crypto';
 import * as Device from 'expo-device';
 import { File } from 'expo-file-system';
 import * as Location from 'expo-location';
-import * as SecureStore from 'expo-secure-store';
 import { apiFetch } from './api';
 import { getDb, kvGet, kvSet } from './db';
 import { evaluateGeofence } from './geofence';
+import * as SecureStore from './secure-store';
 
 export type SessionType = 'time_in' | 'time_out';
 

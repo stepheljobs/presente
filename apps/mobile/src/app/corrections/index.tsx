@@ -7,8 +7,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import { apiFetch } from '../../lib/api';
+import { scheduleLocalNotification } from '../../lib/notifications';
 
 interface Correction {
   id: string;
@@ -98,23 +98,14 @@ const seen = new Set<string>();
 async function maybeNotify(key: string, c: Correction) {
   if (c.status === 'submitted' || seen.has(key)) return;
   seen.add(key);
-  try {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title:
-          c.status === 'approved'
-            ? 'Correction approved'
-            : 'Correction rejected',
-        body: `${c.workerName ?? 'Worker'} · ${c.day}${
-          c.reviewNote ? ` — ${c.reviewNote}` : ''
-        }`,
-        data: { path: '/corrections', correctionId: c.id },
-      },
-      trigger: null,
-    });
-  } catch {
-    /* optional */
-  }
+  await scheduleLocalNotification({
+    title:
+      c.status === 'approved' ? 'Correction approved' : 'Correction rejected',
+    body: `${c.workerName ?? 'Worker'} · ${c.day}${
+      c.reviewNote ? ` — ${c.reviewNote}` : ''
+    }`,
+    data: { path: '/corrections', correctionId: c.id },
+  });
 }
 
 const styles = StyleSheet.create({

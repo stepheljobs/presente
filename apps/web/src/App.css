@@ -276,7 +276,8 @@ input[type='range'] {
 .toolbar label,
 .edit-form label,
 .settings-form .field,
-.site-form .field {
+.site-form .field,
+.worker-form .field {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -602,6 +603,7 @@ input[type='range'] {
 
 .edit-form,
 .site-form,
+.worker-form,
 .settings-form fieldset {
   display: flex;
   flex-direction: column;
@@ -614,6 +616,7 @@ input[type='range'] {
 }
 
 .site-form,
+.worker-form,
 .csv-import,
 .approval-section {
   border: 1px solid var(--border);
@@ -621,6 +624,19 @@ input[type='range'] {
   background: var(--surface);
   padding: 1rem;
   margin-bottom: 1rem;
+}
+
+.worker-form .checkbox-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.worker-form .checkbox-field input[type='checkbox'] {
+  width: auto;
+  margin: 0;
 }
 
 .settings-form fieldset {
@@ -843,6 +859,7 @@ input[type='range'] {
 
   .card-block,
   .site-form,
+  .worker-form,
   .csv-import,
   .approval-section {
     padding: 0.85rem;
