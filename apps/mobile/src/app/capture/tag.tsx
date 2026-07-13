@@ -61,7 +61,8 @@ export default function TagScreen() {
     return roster.filter(
       (w) =>
         w.fullName.toLowerCase().includes(q) ||
-        (w.nickname?.toLowerCase().includes(q) ?? false),
+        (w.nickname?.toLowerCase().includes(q) ?? false) ||
+        (w.position?.toLowerCase().includes(q) ?? false),
     );
   }, [roster, query]);
 
@@ -77,6 +78,18 @@ export default function TagScreen() {
     server?.tags.filter(
       (t) => t.band === 'unrecognized' && t.status === 'pending_confirm',
     ) ?? [];
+
+  /** Workers already tagged this session (local + server) — badge only. */
+  const taggedWorkerIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const t of session?.localTags ?? []) {
+      if (t.workerId) ids.add(t.workerId);
+    }
+    for (const t of server?.tags ?? []) {
+      if (t.workerId && t.status === 'active') ids.add(t.workerId);
+    }
+    return ids;
+  }, [session?.localTags, server?.tags]);
 
   async function tryCloudPass() {
     if (!session) return;
@@ -223,36 +236,101 @@ export default function TagScreen() {
   }
 
   if (mode === 'manual') {
+    const q = query.trim();
+    const countLabel = q
+      ? `${filtered.length} of ${roster.length} match “${q}”`
+      : `${roster.length} worker${roster.length === 1 ? '' : 's'} · tap to tag`;
+
     return (
       <View style={styles.container}>
         <Text style={styles.heading}>Tag from roster</Text>
         <Text style={styles.hint}>
-          Manual tags are flagged for admin review (FR-15).
+          Manual tags are flagged for admin review (FR-15). Scroll the list or
+          search when the crew is long.
         </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Search name…"
-          value={query}
-          onChangeText={setQuery}
-          autoFocus
-        />
-        <FlatList
-          data={filtered}
-          keyExtractor={(w) => w.id}
-          renderItem={({ item }) => (
+
+        <View style={styles.searchRow}>
+          <TextInput
+            style={[styles.input, styles.searchInput]}
+            placeholder="Search name or nickname…"
+            value={query}
+            onChangeText={setQuery}
+            autoCorrect={false}
+            autoCapitalize="none"
+            clearButtonMode="never"
+            returnKeyType="search"
+          />
+          {q.length > 0 && (
             <Pressable
-              style={styles.row}
-              disabled={busy}
-              onPress={() => void addManual(item)}
+              style={styles.clearSearch}
+              onPress={() => setQuery('')}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+              hitSlop={8}
             >
-              <Text style={styles.name}>{item.fullName}</Text>
-              {item.nickname ? (
-                <Text style={styles.meta}>{item.nickname}</Text>
-              ) : null}
+              <Text style={styles.clearSearchText}>Clear</Text>
             </Pressable>
           )}
+        </View>
+
+        <Text style={styles.count}>{countLabel}</Text>
+
+        <FlatList
+          style={styles.rosterList}
+          data={filtered}
+          keyExtractor={(w) => w.id}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          ListEmptyComponent={
+            <View style={styles.emptyRoster}>
+              <Text style={styles.emptyTitle}>
+                {roster.length === 0
+                  ? 'No active workers on this site roster'
+                  : 'No workers match your search'}
+              </Text>
+              <Text style={styles.emptyBody}>
+                {roster.length === 0
+                  ? 'Assign workers to this site on the web dashboard, then pull to refresh or re-open tagging.'
+                  : 'Try another name, nickname, or clear the search to see everyone.'}
+              </Text>
+            </View>
+          }
+          renderItem={({ item }) => {
+            const already = taggedWorkerIds.has(item.id);
+            return (
+              <Pressable
+                style={[styles.row, already && styles.rowTagged]}
+                disabled={busy}
+                onPress={() => void addManual(item)}
+              >
+                <View style={styles.rowMain}>
+                  <Text style={styles.name}>{item.fullName}</Text>
+                  <Text style={styles.meta}>
+                    {[
+                      item.nickname ? `“${item.nickname}”` : null,
+                      item.position,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || '—'}
+                  </Text>
+                </View>
+                {already ? (
+                  <Text style={styles.taggedBadge}>Tagged</Text>
+                ) : (
+                  <Text style={styles.rowChevron}>Select</Text>
+                )}
+              </Pressable>
+            );
+          }}
         />
-        <Pressable style={styles.secondary} onPress={() => setMode('list')}>
+
+        <Pressable
+          style={styles.secondary}
+          onPress={() => {
+            setQuery('');
+            setMode('list');
+          }}
+        >
           <Text>Cancel</Text>
         </Pressable>
       </View>
@@ -505,10 +583,79 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+  },
+  clearSearch: {
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  clearSearchText: {
+    color: '#14532d',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  count: {
+    color: '#14532d',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  rosterList: {
+    flex: 1,
+    minHeight: 120,
+  },
+  emptyRoster: {
+    paddingVertical: 28,
+    paddingHorizontal: 8,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#374151',
+    textAlign: 'center',
+  },
+  emptyBody: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   row: {
-    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#ddd',
+  },
+  rowTagged: {
+    backgroundColor: '#f0fdf4',
+  },
+  rowMain: {
+    flex: 1,
+    gap: 2,
+  },
+  rowChevron: {
+    color: '#14532d',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  taggedBadge: {
+    color: '#166534',
+    fontWeight: '700',
+    fontSize: 12,
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   actionBtn: {
