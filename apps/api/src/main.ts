@@ -5,7 +5,11 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.enableCors({ origin: process.env.CORS_ORIGIN ?? true });
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN ?? true,
+    // So the browser can read download filenames from export responses.
+    exposedHeaders: ['Content-Disposition', 'X-Export-Hash'],
+  });
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();

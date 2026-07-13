@@ -7,6 +7,7 @@ import {
   Text,
   TextInput,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiFetch } from '../../lib/api';
 import {
   EnrollmentDraft,
@@ -14,12 +15,14 @@ import {
   saveDraft,
 } from '../../lib/enrollment';
 
+import { Screen } from '../../components/Screen';
 /**
  * E3-S02: worker profile form. No rate field — engineers cannot see or
  * set rates (the admin confirms one at approval, E3-S10). Draft persists
  * to the encrypted DB on every keystroke.
  */
 export default function WorkerFormScreen() {
+  const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<EnrollmentDraft>({ fullName: '' });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -64,7 +67,13 @@ export default function WorkerFormScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        { paddingBottom: Math.max(insets.bottom, 12) + 16 },
+      ]}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.title}>New worker</Text>
       {restored && (
         <Text style={styles.restored}>Draft restored from this device.</Text>

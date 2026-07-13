@@ -18,6 +18,7 @@ import {
   type LocalSession,
 } from '../../lib/capture';
 
+import { Screen } from '../../components/Screen';
 /**
  * E4-S03/S04/S06/S08: in-app camera only (no gallery path), multi-photo
  * loop, live face-count overlay, geofence banner, SHA-256 at capture.
@@ -60,7 +61,7 @@ export default function CaptureCameraScreen() {
 
   if (!permission?.granted) {
     return (
-      <View style={styles.center}>
+      <Screen style={styles.center} edges={{ top: false, bottom: true }}>
         <Text style={styles.prompt}>
           Camera is required for attendance photos. Gallery import is not
           allowed.
@@ -68,7 +69,7 @@ export default function CaptureCameraScreen() {
         <Pressable style={styles.button} onPress={requestPermission}>
           <Text style={styles.buttonText}>Allow camera</Text>
         </Pressable>
-      </View>
+      </Screen>
     );
   }
 
@@ -119,7 +120,7 @@ export default function CaptureCameraScreen() {
       : null;
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container} edges={{ top: false, bottom: true }}>
       {fenceBanner && (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>{fenceBanner}</Text>
@@ -193,7 +194,7 @@ export default function CaptureCameraScreen() {
           </Pressable>
         )}
       </View>
-    </View>
+    </Screen>
   );
 }
 

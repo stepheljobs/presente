@@ -14,6 +14,7 @@ import {
   type DayInput,
 } from './compute';
 import {
+  payslipDownloadName,
   payslipPdf,
   signatureSheetPdf,
   toCsv,
@@ -66,9 +67,21 @@ export class PayrollService {
     if (actor.role === 'engineer') {
       throw new ForbiddenException('Engineers cannot run payroll');
     }
-    const bounds =
+    let bounds =
       period ??
       (await this.suggestPeriod(actor));
+
+    if (period) {
+      if (!period.start || !period.end) {
+        throw new BadRequestException(
+          'Both start and end are required when specifying a period',
+        );
+      }
+      if (period.start > period.end) {
+        throw new BadRequestException('period start must be on or before end');
+      }
+      bounds = period;
+    }
 
     return this.db.withTenant(actor.tenantId, async (client) => {
       const existing = await client.query(
@@ -596,17 +609,61 @@ export class PayrollService {
     });
   }
 
-  /** E7-S14/S15/S16 exports. */
+  /** E7-S14/S15/S16 exports. Single-worker payslip: format=payslip&workerId=… */
   async export(
     actor: AuthUser,
     runId: string,
-    format: 'csv' | 'xlsx' | 'signature-pdf' | 'payslips-zip',
+    format: 'csv' | 'xlsx' | 'signature-pdf' | 'payslips-zip' | 'payslip',
+    workerId?: string,
   ) {
     const run = await this.getRun(actor, runId);
+    const period = `${run.periodStart} – ${run.periodEnd}`;
+
+    // Single payslip: allowed on any status (preview while drafting).
+    if (format === 'payslip') {
+      if (!workerId) {
+        throw new BadRequestException('workerId is required for format=payslip');
+      }
+      const line = run.lines.find((l) => l.workerId === workerId);
+      if (!line) {
+        throw new NotFoundException('Worker not found on this payroll run');
+      }
+      const exportLine: ExportLine = {
+        workerName: line.workerName,
+        daysPresent: line.daysPresent,
+        halfdays: line.halfdays,
+        otHours: line.otHours,
+        adjustments: line.adjustments,
+        gross: line.gross,
+        dailyRate: line.dailyRate,
+      };
+      const body = payslipPdf(line.workerName, period, exportLine);
+      const hash = createHash('sha256').update(body).digest('hex');
+      const filename = payslipDownloadName(line.workerName);
+      await this.db.withTenant(actor.tenantId, async (client) => {
+        await this.audit.log(client, {
+          actor: actor.sub,
+          action: 'payroll.export',
+          entity: `payroll_run:${runId}`,
+          after: {
+            format: 'payslip',
+            workerId,
+            hash,
+            bytes: body.length,
+          },
+        });
+      });
+      return {
+        body,
+        contentType: 'application/pdf',
+        filename,
+        hash,
+      };
+    }
+
     if (run.status !== 'approved' && run.status !== 'exported') {
-      // Allow export from approved; also permit reviewed for draft testing? Story says after approve.
-      if (run.status === 'draft') {
-        throw new BadRequestException('Approve the run before exporting');
+      if (run.status === 'draft' || run.status === 'reviewed') {
+        throw new BadRequestException('Approve the run before bulk exporting');
       }
     }
     const lines: ExportLine[] = run.lines.map((l) => ({
@@ -618,7 +675,6 @@ export class PayrollService {
       gross: l.gross,
       dailyRate: l.dailyRate,
     }));
-    const period = `${run.periodStart} – ${run.periodEnd}`;
 
     let body: Buffer | string;
     let contentType: string;
@@ -637,7 +693,7 @@ export class PayrollService {
       contentType = 'application/pdf';
       filename = `signatures-${run.periodStart}.pdf`;
     } else {
-      // Concatenate payslip PDFs with simple separators (true zip deferred).
+      // Concatenate payslip PDFs (true zip deferred).
       const parts = run.lines.map((l) =>
         payslipPdf(l.workerName, period, {
           workerName: l.workerName,

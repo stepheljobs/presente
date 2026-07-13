@@ -15,6 +15,7 @@ import {
   uploadArtifact,
 } from '../../lib/enrollment';
 
+import { Screen } from '../../components/Screen';
 interface CapturedShot {
   pose: PoseId;
   uri: string;
@@ -38,12 +39,12 @@ export default function FaceCaptureScreen() {
 
   if (!permission?.granted) {
     return (
-      <View style={styles.center}>
+      <Screen style={styles.center} edges={{ top: false, bottom: true }}>
         <Text>Camera access is needed for face enrollment.</Text>
         <Pressable style={styles.button} onPress={requestPermission}>
           <Text style={styles.buttonText}>Allow camera</Text>
         </Pressable>
-      </View>
+      </Screen>
     );
   }
 
@@ -101,7 +102,7 @@ export default function FaceCaptureScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container} edges={{ top: false, bottom: true }}>
       <View style={styles.progress}>
         {POSES.map((p, i) => (
           <View
@@ -149,7 +150,7 @@ export default function FaceCaptureScreen() {
           </View>
         </View>
       )}
-    </View>
+    </Screen>
   );
 }
 

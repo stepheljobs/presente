@@ -293,7 +293,8 @@ export class WorkersController {
 export class RosterController {
   constructor(private readonly workersService: WorkersService) {}
 
-  @Roles('owner', 'admin')
+  /** Owner/admin: any site. Engineer: only sites they are assigned to. */
+  @Roles('owner', 'admin', 'engineer')
   @Post(':workerId')
   add(
     @Param('siteId', ParseUUIDPipe) siteId: string,
@@ -303,7 +304,7 @@ export class RosterController {
     return this.workersService.addToSite(user, siteId, workerId);
   }
 
-  @Roles('owner', 'admin')
+  @Roles('owner', 'admin', 'engineer')
   @Delete(':workerId')
   remove(
     @Param('siteId', ParseUUIDPipe) siteId: string,

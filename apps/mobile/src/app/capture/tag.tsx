@@ -24,6 +24,7 @@ import {
 } from '../../lib/capture';
 import { hasPendingRecognition } from '../../lib/sync';
 
+import { Screen } from '../../components/Screen';
 /**
  * E4-S11–S15: tagging screen — auto chips (after sync), confirm cards,
  * manual roster tag, visitor mark, quick-enroll entry.
@@ -225,13 +226,13 @@ export default function TagScreen() {
 
   if (!session) {
     return (
-      <View style={styles.center}>
+      <Screen style={styles.center} edges={{ top: false, bottom: true }}>
         {error ? (
           <Text style={styles.error}>{error}</Text>
         ) : (
           <ActivityIndicator color="#14532d" />
         )}
-      </View>
+      </Screen>
     );
   }
 
@@ -242,7 +243,7 @@ export default function TagScreen() {
       : `${roster.length} worker${roster.length === 1 ? '' : 's'} · tap to tag`;
 
     return (
-      <View style={styles.container}>
+      <Screen style={styles.container} edges={{ top: false, bottom: true }}>
         <Text style={styles.heading}>Tag from roster</Text>
         <Text style={styles.hint}>
           Manual tags are flagged for admin review (FR-15). Scroll the list or
@@ -290,9 +291,17 @@ export default function TagScreen() {
               </Text>
               <Text style={styles.emptyBody}>
                 {roster.length === 0
-                  ? 'Assign workers to this site on the web dashboard, then pull to refresh or re-open tagging.'
+                  ? 'Assign workers to this site from the Workers tab (tap a worker → toggle sites), then re-open tagging.'
                   : 'Try another name, nickname, or clear the search to see everyone.'}
               </Text>
+              {roster.length === 0 && (
+                <Pressable
+                  style={styles.assignCta}
+                  onPress={() => router.push('/(tabs)/workers')}
+                >
+                  <Text style={styles.assignCtaText}>Open Workers</Text>
+                </Pressable>
+              )}
             </View>
           }
           renderItem={({ item }) => {
@@ -333,13 +342,13 @@ export default function TagScreen() {
         >
           <Text>Cancel</Text>
         </Pressable>
-      </View>
+      </Screen>
     );
   }
 
   if (mode === 'confirm' && confirmTag) {
     return (
-      <View style={styles.container}>
+      <Screen style={styles.container} edges={{ top: false, bottom: true }}>
         <Text style={styles.heading}>Is this {confirmTag.workerName}?</Text>
         <Text style={styles.hint}>
           Confidence{' '}
@@ -388,12 +397,12 @@ export default function TagScreen() {
             <Text>Back</Text>
           </Pressable>
         )}
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container} edges={{ top: false, bottom: true }}>
       <Text style={styles.heading}>
         {session.siteName} ·{' '}
         {session.type === 'time_in' ? 'Time In' : 'Time Out'}
@@ -527,7 +536,7 @@ export default function TagScreen() {
       >
         <Text style={styles.buttonText}>Review & save</Text>
       </Pressable>
-    </View>
+    </Screen>
   );
 }
 
@@ -626,6 +635,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
+  assignCta: {
+    marginTop: 12,
+    alignSelf: 'center',
+    backgroundColor: '#14532d',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  assignCtaText: { color: '#fff', fontWeight: '700' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

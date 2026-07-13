@@ -273,6 +273,15 @@ input[type='range'] {
   padding: 0;
 }
 
+.payroll-period-toolbar .field input[type='date'] {
+  min-width: 10.5rem;
+}
+
+.payroll-period-hint {
+  align-self: center;
+  font-size: 0.9rem;
+}
+
 .toolbar label,
 .edit-form label,
 .settings-form .field,

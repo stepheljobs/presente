@@ -21,6 +21,7 @@ import {
 } from '../../lib/capture';
 import { apiFetch } from '../../lib/api';
 
+import { Screen } from '../../components/Screen';
 /**
  * E4-S16 + S18: session summary (counts, geofence, time) and optional
  * time-out reconciliation strip. Save persists to the encrypted queue.
@@ -127,17 +128,17 @@ export default function SummaryScreen() {
 
   if (!session && !error) {
     return (
-      <View style={styles.center}>
+      <Screen style={styles.center} edges={{ top: false, bottom: true }}>
         <ActivityIndicator color="#14532d" />
-      </View>
+      </Screen>
     );
   }
 
   if (!session) {
     return (
-      <View style={styles.center}>
+      <Screen style={styles.center} edges={{ top: false, bottom: true }}>
         <Text style={styles.error}>{error}</Text>
-      </View>
+      </Screen>
     );
   }
 
@@ -154,7 +155,7 @@ export default function SummaryScreen() {
         : `GPS ⚠ ${session.gps.distanceM ?? '?'} m outside`;
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container} edges={{ top: false, bottom: true }}>
       <Text style={styles.heading}>Session summary</Text>
       <Text style={styles.line}>
         {session.type === 'time_in' ? 'Time In' : 'Time Out'} ·{' '}
@@ -257,7 +258,7 @@ export default function SummaryScreen() {
           <Text style={styles.buttonText}>Done — back to Home</Text>
         </Pressable>
       )}
-    </View>
+    </Screen>
   );
 }
 

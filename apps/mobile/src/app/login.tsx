@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Screen } from '../components/Screen';
 import { useAuth } from '../lib/auth-context';
 
 export default function LoginScreen() {
@@ -30,7 +31,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container}>
       <Text style={styles.title}>Presente</Text>
       <Text style={styles.tagline}>Attendance you can prove.</Text>
       <TextInput
@@ -80,13 +81,12 @@ export default function LoginScreen() {
           <Text style={styles.buttonText}>Sign in</Text>
         )}
       </Pressable>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     justifyContent: 'center',
     padding: 24,
     gap: 12,

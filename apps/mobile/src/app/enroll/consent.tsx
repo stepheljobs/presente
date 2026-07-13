@@ -16,6 +16,7 @@ import {
   saveDraft,
 } from '../../lib/enrollment';
 
+import { Screen } from '../../components/Screen';
 /**
  * E3-S03: RA 10173 biometric notice, EN/TL toggle, copy served from the
  * backend so counsel can revise without a release. Accept stays disabled
@@ -52,7 +53,7 @@ export default function ConsentScreen() {
   if (!notice) return <Text style={styles.loading}>Loading notice…</Text>;
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container} edges={{ top: false, bottom: true }}>
       <View style={styles.langRow}>
         <Pressable
           style={[styles.langChip, language === 'tl' && styles.langActive]}
@@ -105,7 +106,7 @@ export default function ConsentScreen() {
             : 'Photograph signed paper form'}
         </Text>
       </Pressable>
-    </View>
+    </Screen>
   );
 }
 

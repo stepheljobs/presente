@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -260,6 +261,15 @@ export class WorkersService {
   /** E2-S04: roster membership, audited both directions. */
   async addToSite(actor: AuthUser, siteId: string, workerId: string) {
     await this.db.withTenant(actor.tenantId, async (client) => {
+      await this.assertCanManageRoster(client, actor, siteId);
+      const worker = await client.query('SELECT id FROM workers WHERE id = $1', [
+        workerId,
+      ]);
+      if (!worker.rowCount) throw new NotFoundException('Worker not found');
+      const site = await client.query('SELECT id FROM sites WHERE id = $1', [
+        siteId,
+      ]);
+      if (!site.rowCount) throw new NotFoundException('Site not found');
       await client.query(
         `INSERT INTO site_workers (tenant_id, site_id, worker_id)
          VALUES (NULLIF(current_setting('app.tenant_id', true), '')::uuid, $1, $2)
@@ -278,6 +288,7 @@ export class WorkersService {
 
   async removeFromSite(actor: AuthUser, siteId: string, workerId: string) {
     await this.db.withTenant(actor.tenantId, async (client) => {
+      await this.assertCanManageRoster(client, actor, siteId);
       await client.query(
         'DELETE FROM site_workers WHERE site_id = $1 AND worker_id = $2',
         [siteId, workerId],
@@ -290,6 +301,28 @@ export class WorkersService {
       });
     });
     return { removed: true };
+  }
+
+  /**
+   * Owners/admins manage any site roster; engineers only sites they are
+   * assigned to (field reassignment without opening the whole company).
+   */
+  private async assertCanManageRoster(
+    client: PoolClient,
+    actor: AuthUser,
+    siteId: string,
+  ): Promise<void> {
+    if (actor.role !== 'engineer') return;
+    const assigned = await client.query(
+      `SELECT 1 FROM site_engineers
+       WHERE site_id = $1 AND user_id = $2`,
+      [siteId, actor.sub],
+    );
+    if (!assigned.rowCount) {
+      throw new ForbiddenException(
+        'Engineers can only manage rosters for sites they are assigned to',
+      );
+    }
   }
 
   private async getInTx(client: PoolClient, actor: AuthUser, id: string) {

@@ -10,6 +10,7 @@ import {
 import { apiFetch } from '../../lib/api';
 import { scheduleLocalNotification } from '../../lib/notifications';
 
+import { Screen } from '../../components/Screen';
 interface Correction {
   id: string;
   day: string;
@@ -57,7 +58,7 @@ export default function CorrectionsListScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.container} edges={{ top: false, bottom: true }}>
       <Pressable
         style={styles.btn}
         onPress={() => router.push('/corrections/new')}
@@ -90,7 +91,7 @@ export default function CorrectionsListScreen() {
           </View>
         )}
       />
-    </View>
+    </Screen>
   );
 }
 

@@ -17,6 +17,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   MinLength,
 } from 'class-validator';
 import type { Response } from 'express';
@@ -25,13 +26,17 @@ import type { AuthUser } from '../auth/roles';
 import { PayrollService } from './payroll.service';
 import type { RunStatus } from './state-machine';
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
 class StartRunDto {
   @IsOptional()
   @IsString()
+  @Matches(DATE_ONLY, { message: 'start must be YYYY-MM-DD' })
   start?: string;
 
   @IsOptional()
   @IsString()
+  @Matches(DATE_ONLY, { message: 'end must be YYYY-MM-DD' })
   end?: string;
 }
 
@@ -207,6 +212,7 @@ export class PayrollController {
   async export(
     @Param('id', ParseUUIDPipe) id: string,
     @Query('format') format: string,
+    @Query('workerId') workerId: string | undefined,
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -215,12 +221,13 @@ export class PayrollController {
       'xlsx',
       'signature-pdf',
       'payslips-zip',
+      'payslip',
     ] as const;
     type Fmt = (typeof allowed)[number];
     const fmt: Fmt = (allowed as readonly string[]).includes(format)
       ? (format as Fmt)
       : 'csv';
-    const file = await this.payroll.export(user, id, fmt);
+    const file = await this.payroll.export(user, id, fmt, workerId);
     res.set({
       'Content-Type': file.contentType,
       'Content-Disposition': `attachment; filename="${file.filename}"`,
